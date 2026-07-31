@@ -50,3 +50,13 @@ test('conserve une interface au nom inconnu plutot que de la jeter', () => {
     { name: 'Carte reseau 3', address: '10.0.0.5' },
   ]);
 });
+
+test('ecarte les adresses link-local APIPA', () => {
+  const avecAPIPA = {
+    'Ethernet 2': [{ address: '169.254.123.224', family: 'IPv4', internal: false }],
+    'Wi-Fi': [{ address: '192.168.1.20', family: 'IPv4', internal: false }],
+  };
+  const candidats = listCandidateAddresses(avecAPIPA);
+  assert.equal(candidats.length, 1);
+  assert.equal(candidats[0].address, '192.168.1.20');
+});

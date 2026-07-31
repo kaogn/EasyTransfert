@@ -25,7 +25,7 @@ export function listCandidateAddresses(interfaces = os.networkInterfaces()) {
   for (const [nom, adresses] of Object.entries(interfaces)) {
     if (!adresses || INTERFACES_VIRTUELLES.test(nom)) continue;
     for (const adresse of adresses) {
-      if (adresse.family !== 'IPv4' || adresse.internal) continue;
+      if (adresse.family !== 'IPv4' || adresse.internal || adresse.address.startsWith('169.254.')) continue;
       candidats.push({ name: nom, address: adresse.address });
     }
   }
