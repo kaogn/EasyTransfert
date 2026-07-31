@@ -6,7 +6,7 @@
   "description": "Transfert de fichiers entre PC et smartphone sur le reseau local, via QR code",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/"
+    "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
     "express": "^5.2.1",

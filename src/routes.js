@@ -13,7 +13,7 @@ const FICHIERS_MAX_PAR_ENVOI = 50;
  * sous forme de mojibake ; on le reinterprete en UTF-8 quand c'est valide.
  */
 function corrigerEncodage(nom) {
-  if (!/[À-ÿ]/.test(nom)) return nom;
+  if (!/[\u00c0-\u00ff]/.test(nom)) return nom;
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.from(nom, 'latin1'));
   } catch {
