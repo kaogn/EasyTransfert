@@ -1,0 +1,16 @@
+{
+  "name": "easytransfert",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Transfert de fichiers entre PC et smartphone sur le reseau local, via QR code",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "qrcode": "^1.5.4"
+  }
+}
