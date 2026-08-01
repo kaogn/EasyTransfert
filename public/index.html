@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EasyTransfert</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>EasyTransfert</h1>
+      <p id="etat" class="etat">Connexion…</p>
+    </header>
+
+    <main>
+      <section id="bloc-qr" class="carte pc-seulement">
+        <h2>Scanner depuis le téléphone</h2>
+        <img id="qr" alt="QR code d'accès" />
+        <p id="url" class="url"></p>
+        <label for="selecteur-ip">Adresse du PC</label>
+        <select id="selecteur-ip"></select>
+        <p class="aide">
+          Si le téléphone n'arrive pas à ouvrir la page, essayez une autre adresse.
+        </p>
+      </section>
+
+      <section class="carte">
+        <div id="zone-depot" class="zone-depot">
+          <p class="pc-seulement">Glissez vos fichiers ici</p>
+          <button id="bouton-parcourir" type="button">Envoyer des fichiers</button>
+          <input id="champ-fichiers" type="file" multiple hidden />
+        </div>
+
+        <div id="progression" class="progression" hidden>
+          <div id="barre" class="barre"></div>
+          <span id="texte-progression"></span>
+        </div>
+
+        <h2>Fichiers partagés</h2>
+        <ul id="liste" class="liste"></ul>
+        <p id="liste-vide" class="aide">Aucun fichier pour l'instant.</p>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
