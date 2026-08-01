@@ -16,7 +16,12 @@ async function demarrer() {
   const storage = createStorage(dir);
   await storage.ensureRoot();
 
-  const app = createApp({ storage, token: TOKEN, events: createEventHub() });
+  const app = createApp({
+    storage,
+    token: TOKEN,
+    events: createEventHub(),
+    network: { candidates: [], active: '127.0.0.1', port: 4455, token: TOKEN },
+  });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });

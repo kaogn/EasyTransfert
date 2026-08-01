@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import express from 'express';
 import multer from 'multer';
+import QRCode from 'qrcode';
 
 const TAILLE_MAX_OCTETS = 2 * 1024 * 1024 * 1024;
 const FICHIERS_MAX_PAR_ENVOI = 50;
@@ -27,7 +28,7 @@ function statutDepuisErreur(err) {
   return 500;
 }
 
-export function createApiRouter({ storage, events }) {
+export function createApiRouter({ storage, events, network }) {
   const router = express.Router();
 
   const upload = multer({
@@ -92,6 +93,30 @@ export function createApiRouter({ storage, events }) {
     } catch (err) {
       res.status(statutDepuisErreur(err)).json({ error: err.message });
     }
+  });
+
+  async function etatReseau() {
+    const url = `http://${network.active}:${network.port}/?t=${network.token}`;
+    return {
+      candidates: network.candidates,
+      active: network.active,
+      url,
+      qr: await QRCode.toDataURL(url, { width: 320, margin: 1 }),
+    };
+  }
+
+  router.get('/network', async (req, res) => {
+    res.json(await etatReseau());
+  });
+
+  router.post('/network', async (req, res) => {
+    const demandee = req.body?.address;
+    if (!network.candidates.some((c) => c.address === demandee)) {
+      res.status(400).json({ error: 'Adresse inconnue' });
+      return;
+    }
+    network.active = demandee;
+    res.json(await etatReseau());
   });
 
   return router;
