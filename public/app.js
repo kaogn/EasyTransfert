@@ -10,6 +10,7 @@ if (params.get('t')) {
 const etat = document.querySelector('#etat');
 const liste = document.querySelector('#liste');
 const listeVide = document.querySelector('#liste-vide');
+const boutonToutSupprimer = document.querySelector('#tout-supprimer');
 const zoneDepot = document.querySelector('#zone-depot');
 const champFichiers = document.querySelector('#champ-fichiers');
 const boutonParcourir = document.querySelector('#bouton-parcourir');
@@ -59,6 +60,7 @@ async function rafraichirListe() {
 
   liste.replaceChildren();
   listeVide.hidden = fichiers.length > 0;
+  boutonToutSupprimer.hidden = fichiers.length === 0;
 
   for (const fichier of fichiers) {
     const li = document.createElement('li');
@@ -90,6 +92,26 @@ async function rafraichirListe() {
     liste.append(li);
   }
 }
+
+boutonToutSupprimer.addEventListener('click', async () => {
+  const nombre = liste.childElementCount;
+  const question = nombre === 1
+    ? 'Supprimer le fichier partagé ? C’est définitif.'
+    : `Supprimer les ${nombre} fichiers partagés ? C’est définitif.`;
+  if (!confirm(question)) return;
+
+  boutonToutSupprimer.disabled = true;
+  const reponse = await api('/api/files', { method: 'DELETE' });
+  boutonToutSupprimer.disabled = false;
+
+  if (!reponse.ok) {
+    afficherEtat('Suppression impossible.', true);
+    return;
+  }
+  const { deleted } = await reponse.json();
+  afficherEtat(deleted === 1 ? '1 fichier supprimé.' : `${deleted} fichiers supprimés.`);
+  await rafraichirListe();
+});
 
 function envoyer(fichiers) {
   if (!fichiers || fichiers.length === 0) return;

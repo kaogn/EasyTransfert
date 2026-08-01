@@ -76,3 +76,26 @@ test('remove supprime le fichier', async () => {
   await storage.remove(encodeId('jetable.txt'));
   assert.deepEqual(await storage.list(), []);
 });
+
+test('removeAll vide le dossier et retourne le nombre de fichiers supprimes', async () => {
+  const storage = await tempStorage();
+  await fs.writeFile(path.join(storage.rootDir, 'a.txt'), 'a');
+  await fs.writeFile(path.join(storage.rootDir, 'b.txt'), 'b');
+
+  assert.equal(await storage.removeAll(), 2);
+  assert.deepEqual(await storage.list(), []);
+});
+
+test('removeAll epargne les envois en cours', async () => {
+  const storage = await tempStorage();
+  await fs.writeFile(path.join(storage.rootDir, 'a.txt'), 'a');
+  await fs.writeFile(path.join(storage.rootDir, 'en-cours.part'), 'x');
+
+  assert.equal(await storage.removeAll(), 1);
+  assert.deepEqual(await fs.readdir(storage.rootDir), ['en-cours.part']);
+});
+
+test('removeAll sur un dossier vide ne leve pas', async () => {
+  const storage = await tempStorage();
+  assert.equal(await storage.removeAll(), 0);
+});

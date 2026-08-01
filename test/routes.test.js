@@ -135,3 +135,35 @@ test('la suppression retire le fichier', async (t) => {
   assert.equal((await ctx.api(`/api/files/${fichier.id}`, { method: 'DELETE' })).status, 200);
   assert.deepEqual(await (await ctx.api('/api/files')).json(), []);
 });
+
+test('DELETE /api/files vide le dossier partage d un coup', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  await ctx.api('/api/upload', { method: 'POST', body: formulaireAvec('un.txt', 'a') });
+  await ctx.api('/api/upload', { method: 'POST', body: formulaireAvec('deux.txt', 'b') });
+
+  const res = await ctx.api('/api/files', { method: 'DELETE' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { deleted: 2 });
+  assert.deepEqual(await (await ctx.api('/api/files')).json(), []);
+});
+
+test('DELETE /api/files sur un dossier vide repond 200 et zero', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const res = await ctx.api('/api/files', { method: 'DELETE' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { deleted: 0 });
+});
+
+test('DELETE /api/files exige le token', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  await ctx.api('/api/upload', { method: 'POST', body: formulaireAvec('precieux.txt', 'a') });
+
+  assert.equal((await fetch(`${ctx.base}/api/files`, { method: 'DELETE' })).status, 401);
+  assert.equal((await (await ctx.api('/api/files')).json()).length, 1);
+});

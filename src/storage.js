@@ -91,5 +91,16 @@ export function createStorage(rootDir) {
     await fs.rm(resolve(id));
   }
 
-  return { rootDir: root, ensureRoot, list, resolve, uniqueName, remove };
+  /**
+   * Vide le dossier partage. S'appuie sur list(), donc les envois en cours
+   * (fichiers .part) sont epargnes : les detruire casserait un transfert
+   * lance depuis l'autre appareil.
+   */
+  async function removeAll() {
+    const fichiers = await list();
+    await Promise.all(fichiers.map((fichier) => remove(fichier.id)));
+    return fichiers.length;
+  }
+
+  return { rootDir: root, ensureRoot, list, resolve, uniqueName, remove, removeAll };
 }

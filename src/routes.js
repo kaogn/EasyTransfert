@@ -85,6 +85,12 @@ export function createApiRouter({ storage, events, network }) {
     res.download(chemin, path.basename(chemin));
   });
 
+  router.delete('/files', async (req, res) => {
+    const deleted = await storage.removeAll();
+    events.broadcast('files-changed');
+    res.json({ deleted });
+  });
+
   router.delete('/files/:id', async (req, res) => {
     try {
       await storage.remove(req.params.id);
