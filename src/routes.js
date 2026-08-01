@@ -27,7 +27,7 @@ function statutDepuisErreur(err) {
   return 500;
 }
 
-export function createApiRouter({ storage }) {
+export function createApiRouter({ storage, events }) {
   const router = express.Router();
 
   const upload = multer({
@@ -42,6 +42,10 @@ export function createApiRouter({ storage }) {
 
   router.get('/files', async (req, res) => {
     res.json(await storage.list());
+  });
+
+  router.get('/events', (req, res) => {
+    events.subscribe(res);
   });
 
   router.post('/upload', upload.array('files', FICHIERS_MAX_PAR_ENVOI), async (req, res) => {
@@ -59,6 +63,7 @@ export function createApiRouter({ storage }) {
       res.status(500).json({ error: `Enregistrement impossible : ${err.message}` });
       return;
     }
+    events.broadcast('files-changed');
     res.json({ saved: enregistres });
   });
 
@@ -82,6 +87,7 @@ export function createApiRouter({ storage }) {
   router.delete('/files/:id', async (req, res) => {
     try {
       await storage.remove(req.params.id);
+      events.broadcast('files-changed');
       res.json({ ok: true });
     } catch (err) {
       res.status(statutDepuisErreur(err)).json({ error: err.message });

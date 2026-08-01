@@ -6,6 +6,7 @@ import path from 'node:path';
 
 import { createApp } from '../src/app.js';
 import { createStorage, encodeId } from '../src/storage.js';
+import { createEventHub } from '../src/events.js';
 
 const TOKEN = 'a'.repeat(32);
 
@@ -15,7 +16,7 @@ async function demarrer() {
   const storage = createStorage(dir);
   await storage.ensureRoot();
 
-  const app = createApp({ storage, token: TOKEN });
+  const app = createApp({ storage, token: TOKEN, events: createEventHub() });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
