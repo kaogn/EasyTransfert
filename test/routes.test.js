@@ -178,3 +178,12 @@ test('un champ de formulaire inattendu renvoie une erreur JSON', async (t) => {
   assert.equal(res.status, 413);
   assert.match((await res.json()).error, /Trop de fichiers/i);
 });
+
+test('GET /ping identifie le service sans exiger de token', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const res = await fetch(`${ctx.base}/ping`);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { app: 'easytransfert' });
+});

@@ -99,6 +99,7 @@ through a single guarded function that refuses any path escaping the shared fold
 | `src/app.js` | assembles the Express app (without listening) |
 | `src/storage.js` | shared folder: sanitising, ids, listing, containment, deletion |
 | `src/network.js` | detection of candidate LAN IPv4 addresses |
+| `src/demarrage.js` | port selection and detection of an already-running instance |
 | `src/security.js` | token generation and auth middleware |
 | `src/events.js` | server-sent events broadcasting |
 | `src/routes.js` | API router |
@@ -110,7 +111,7 @@ Three runtime dependencies (`express`, `multer`, `qrcode`), zero dev dependencie
 npm test
 ```
 
-42 tests, using the Node test runner.
+58 tests, using the Node test runner.
 
 ## Project status
 

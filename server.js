@@ -1,6 +1,9 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
+import { createServer } from 'node:http';
+
+import { ecouterSurPremierPortLibre, instanceExistante } from './src/demarrage.js';
 
 import { createApp } from './src/app.js';
 import { createStorage } from './src/storage.js';
@@ -8,7 +11,10 @@ import { createEventHub } from './src/events.js';
 import { lireOuCreerToken, ecrireToken } from './src/security.js';
 import { listCandidateAddresses } from './src/network.js';
 
-const PORT = 4455;
+const PORT_PREFERE = 4455;
+// Plage volontairement etroite : le port figure dans la regle de pare-feu et
+// dans le favori du telephone, il ne peut pas etre choisi au hasard.
+const PORTS = [4455, 4456, 4457, 4458, 4459];
 const NOM_REGLE_PARE_FEU = 'EasyTransfert';
 const RACINE = path.dirname(fileURLToPath(import.meta.url));
 const DOSSIER_PARTAGE = path.join(RACINE, 'partage');
@@ -51,7 +57,7 @@ async function demarrer() {
   // Le jeton survit aux redemarrages : le telephone peut garder la page en
   // favori au lieu de rescanner le QR code a chaque lancement.
   const token = await lireOuCreerToken(FICHIER_TOKEN);
-  const network = { candidates, active: candidates[0].address, port: PORT, token };
+  const network = { candidates, active: candidates[0].address, port: PORT_PREFERE, token };
   const app = createApp({
     storage,
     events: createEventHub(),
@@ -59,26 +65,52 @@ async function demarrer() {
     persisterToken: (nouveau) => ecrireToken(FICHIER_TOKEN, nouveau),
   });
 
-  const server = app.listen(PORT, '0.0.0.0');
+  // Relancer le programme alors qu'il tourne deja ne doit pas produire une
+  // erreur : on ouvre simplement la page de l'instance en place. Deux serveurs
+  // sur le meme dossier afficheraient des listes desynchronisees.
+  if (await instanceExistante(PORT_PREFERE, '127.0.0.1')) {
+    console.log('EasyTransfert tourne déjà : ouverture de la page existante.');
+    ouvrirNavigateur(`http://${network.active}:${PORT_PREFERE}/?t=${token}`);
+    return;
+  }
 
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(
-        `Le port ${PORT} est déjà utilisé. Fermez l'autre instance d'EasyTransfert, ou changez PORT dans server.js.`,
-      );
+  let server;
+  let port;
+  try {
+    ({ server, port } = await ecouterSurPremierPortLibre(
+      createServer(app),
+      '0.0.0.0',
+      PORTS,
+    ));
+  } catch (err) {
+    if (err.code === 'ENOPORT') {
+      console.error(`Aucun port libre entre ${PORTS[0]} et ${PORTS[PORTS.length - 1]}.`);
+      console.error("Un autre programme les occupe. Redémarrez le PC, puis relancez EasyTransfert.");
     } else {
       console.error(`Démarrage impossible : ${err.message}`);
     }
     process.exit(1);
-  });
+    return;
+  }
 
-  server.on('listening', async () => {
-    const url = `http://${network.active}:${PORT}/?t=${token}`;
+  network.port = port;
+
+  {
+    const url = `http://${network.active}:${port}/?t=${token}`;
 
     console.log('EasyTransfert est démarré.');
     console.log(`  Dossier partagé : ${storage.rootDir}`);
     console.log(`  Adresse         : ${url}`);
     console.log('  Arrêt           : Ctrl+C');
+
+    if (port !== PORT_PREFERE) {
+      console.warn('');
+      console.warn(
+        `Le port habituel ${PORT_PREFERE} était occupé par un autre programme : EasyTransfert utilise`,
+      );
+      console.warn(`  le port ${port} cette fois-ci. Le téléphone devra rescanner le QR code.`);
+      console.warn('');
+    }
 
     if (!(await regleParFeuPresente())) {
       console.warn('');
@@ -93,7 +125,9 @@ async function demarrer() {
     }
 
     ouvrirNavigateur(url);
-  });
+  }
+
+  return server;
 }
 
 demarrer();

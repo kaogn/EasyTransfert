@@ -17,6 +17,14 @@ export function createApp({ storage, events, network, persisterToken }) {
   const app = express();
 
   app.use(express.json());
+
+  // Permet a un second lancement de reconnaitre une instance deja en place,
+  // plutot que d'echouer sur un port occupe. Volontairement sans jeton : ne
+  // revele que l'existence du service, que la page d'accueil expose deja.
+  app.get('/ping', (req, res) => {
+    res.json({ app: 'easytransfert' });
+  });
+
   app.use(
     '/api',
     createAuthMiddleware(() => network.token),

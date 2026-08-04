@@ -103,6 +103,7 @@ chemin sortant du dossier partagé.
 | `src/app.js` | assemble l'application Express (sans l'écouter) |
 | `src/storage.js` | dossier partagé : sanitisation, identifiants, listing, confinement, suppression |
 | `src/network.js` | détection des adresses IPv4 candidates du réseau local |
+| `src/demarrage.js` | choix du port et détection d'une instance déjà lancée |
 | `src/security.js` | génération du jeton et middleware d'authentification |
 | `src/events.js` | diffusion des changements en SSE |
 | `src/routes.js` | routeur de l'API |
@@ -115,7 +116,7 @@ développement.
 npm test
 ```
 
-42 tests, avec le lanceur de tests intégré à Node.
+58 tests, avec le lanceur de tests intégré à Node.
 
 ## État du projet
 
