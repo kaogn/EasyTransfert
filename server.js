@@ -5,13 +5,14 @@ import { execFile } from 'node:child_process';
 import { createApp } from './src/app.js';
 import { createStorage } from './src/storage.js';
 import { createEventHub } from './src/events.js';
-import { createToken } from './src/security.js';
+import { lireOuCreerToken, ecrireToken } from './src/security.js';
 import { listCandidateAddresses } from './src/network.js';
 
 const PORT = 4455;
 const NOM_REGLE_PARE_FEU = 'EasyTransfert';
 const RACINE = path.dirname(fileURLToPath(import.meta.url));
 const DOSSIER_PARTAGE = path.join(RACINE, 'partage');
+const FICHIER_TOKEN = path.join(RACINE, '.token');
 
 function commande(binaire, args) {
   return new Promise((resolve) => {
@@ -47,9 +48,16 @@ async function demarrer() {
     process.exit(1);
   }
 
-  const token = createToken();
+  // Le jeton survit aux redemarrages : le telephone peut garder la page en
+  // favori au lieu de rescanner le QR code a chaque lancement.
+  const token = await lireOuCreerToken(FICHIER_TOKEN);
   const network = { candidates, active: candidates[0].address, port: PORT, token };
-  const app = createApp({ storage, token, events: createEventHub(), network });
+  const app = createApp({
+    storage,
+    events: createEventHub(),
+    network,
+    persisterToken: (nouveau) => ecrireToken(FICHIER_TOKEN, nouveau),
+  });
 
   const server = app.listen(PORT, '0.0.0.0');
 

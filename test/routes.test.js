@@ -18,7 +18,6 @@ async function demarrer() {
 
   const app = createApp({
     storage,
-    token: TOKEN,
     events: createEventHub(),
     network: { candidates: [], active: '127.0.0.1', port: 4455, token: TOKEN },
   });

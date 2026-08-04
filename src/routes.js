@@ -6,6 +6,8 @@ import express from 'express';
 import multer from 'multer';
 import QRCode from 'qrcode';
 
+import { createToken } from './security.js';
+
 const TAILLE_MAX_OCTETS = 2 * 1024 * 1024 * 1024;
 const FICHIERS_MAX_PAR_ENVOI = 50;
 
@@ -28,7 +30,7 @@ function statutDepuisErreur(err) {
   return 500;
 }
 
-export function createApiRouter({ storage, events, network }) {
+export function createApiRouter({ storage, events, network, persisterToken }) {
   const router = express.Router();
 
   const upload = multer({
@@ -106,6 +108,7 @@ export function createApiRouter({ storage, events, network }) {
     return {
       candidates: network.candidates,
       active: network.active,
+      token: network.token,
       url,
       qr: await QRCode.toDataURL(url, { width: 320, margin: 1 }),
     };
@@ -122,6 +125,14 @@ export function createApiRouter({ storage, events, network }) {
       return;
     }
     network.active = demandee;
+    res.json(await etatReseau());
+  });
+
+  // Regenere le jeton d'acces : les appareils deja connectes sont ejectes et
+  // devront rescanner le nouveau QR code.
+  router.post('/network/token', async (req, res) => {
+    network.token = createToken();
+    if (persisterToken) await persisterToken(network.token);
     res.json(await etatReseau());
   });
 

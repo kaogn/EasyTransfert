@@ -1,9 +1,11 @@
 const params = new URLSearchParams(location.search);
-const token = params.get('t') || sessionStorage.getItem('easytransfert-token');
+// localStorage et non sessionStorage : l'appareil garde son acces apres
+// fermeture de l'onglet, et la page peut vivre en favori sans rescanner.
+let token = params.get('t') || localStorage.getItem('easytransfert-token');
 
 if (params.get('t')) {
-  sessionStorage.setItem('easytransfert-token', params.get('t'));
-  // On retire le token de la barre d'adresse : il reste en sessionStorage.
+  localStorage.setItem('easytransfert-token', params.get('t'));
+  // On retire le token de la barre d'adresse : il reste en localStorage.
   history.replaceState({}, '', location.pathname);
 }
 
@@ -21,6 +23,7 @@ const blocQr = document.querySelector('#bloc-qr');
 const imageQr = document.querySelector('#qr');
 const champUrl = document.querySelector('#url');
 const selecteurIp = document.querySelector('#selecteur-ip');
+const boutonRegenerer = document.querySelector('#regenerer-jeton');
 
 function afficherEtat(message, horsLigne = false) {
   etat.textContent = message;
@@ -198,9 +201,18 @@ selecteurIp.addEventListener('change', async () => {
   if (reponse.ok) await chargerReseau(await reponse.json());
 });
 
-function ecouterEvenements() {
+let fluxEvenements = null;
+
+function ecouterEvenements({ annoncer = true } = {}) {
+  // Le flux porte le jeton dans son URL : apres une regeneration, il faut le
+  // refermer et en ouvrir un neuf, sinon la reconnexion echouerait en 401.
+  if (fluxEvenements) fluxEvenements.close();
+
   const source = new EventSource(`/api/events?t=${encodeURIComponent(token)}`);
-  source.addEventListener('open', () => afficherEtat('Connecté.'));
+  fluxEvenements = source;
+  // Sans ce garde-fou, le "Connecte." de la reconnexion effacerait aussitot la
+  // consigne de rescanner le QR code, qui est l'information utile a ce moment-la.
+  source.addEventListener('open', () => { if (annoncer) afficherEtat('Connecté.'); });
   source.addEventListener('message', (evenement) => {
     if (JSON.parse(evenement.data).type === 'files-changed') rafraichirListe();
   });
@@ -209,6 +221,29 @@ function ecouterEvenements() {
     // EventSource se reconnecte seul ; on se contente de le signaler.
   });
 }
+
+boutonRegenerer.addEventListener('click', async () => {
+  const question =
+    'Générer un nouveau jeton d’accès ?\n\n'
+    + 'Les appareils déjà connectés seront déconnectés et devront rescanner le QR code.';
+  if (!confirm(question)) return;
+
+  boutonRegenerer.disabled = true;
+  const reponse = await api('/api/network/token', { method: 'POST' });
+  boutonRegenerer.disabled = false;
+
+  if (!reponse.ok) {
+    afficherEtat('Impossible de générer un nouveau jeton.', true);
+    return;
+  }
+
+  const donnees = await reponse.json();
+  token = donnees.token;
+  localStorage.setItem('easytransfert-token', token);
+  await chargerReseau(donnees);
+  ecouterEvenements({ annoncer: false });
+  afficherEtat('Nouveau jeton en place. Rescannez le QR code depuis le téléphone.');
+});
 
 await chargerReseau();
 await rafraichirListe();

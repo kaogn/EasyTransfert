@@ -19,8 +19,12 @@ Concretely, and without sugar-coating it:
   Anyone able to observe network traffic can read it.
 - **Whoever holds that token owns the shared folder.** They can list, download, upload
   and *delete every file in it*, from any device on the network.
-- **There are no accounts, no permissions, no audit trail.** The token, regenerated on
-  each start, is the one and only barrier.
+- **There are no accounts, no permissions, no audit trail.** The token is the one and only
+  barrier.
+- **The token is persisted across restarts**, so that the phone can keep the page as a
+  bookmark instead of rescanning every time. A leaked token therefore stays valid until
+  you press **« Générer un nouveau jeton »** on the PC, which immediately kicks out every
+  connected device.
 
 **Do not run this on a Wi-Fi network you do not control** — student housing, office,
 café, hotel, coworking space, or any shared connection. On such a network, treat every
@@ -42,6 +46,8 @@ encryption — [LocalSend](https://localsend.org) is a good one.
 - Uploads show up **live on the other device**, with no refresh (server-sent events).
 - Drag and drop from the PC, file picker from the phone, upload progress bar.
 - Delete one file, or all of them at once.
+- **The link stays valid across restarts**: pair the phone once, add the page to its home
+  screen, and you never scan again. A button on the PC issues a fresh token when needed.
 - Accented file names survive the round trip.
 - **No outbound requests.** No CDN, no remote font, no third-party service, no telemetry.
   Nothing leaves your local network.

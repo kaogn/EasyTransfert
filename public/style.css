@@ -99,6 +99,19 @@ button {
 
 @media (min-width: 900px) { button { width: auto; } }
 
+.secondaire {
+  background: none;
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.8rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.secondaire:hover { border-color: var(--accent); color: var(--accent); }
+
 .progression { margin-bottom: 1rem; font-size: 0.85rem; color: var(--attenue); }
 
 .barre {

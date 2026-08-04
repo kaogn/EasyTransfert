@@ -13,11 +13,15 @@ const DOSSIER_PUBLIC = path.join(RACINE, '..', 'public');
  * Assemble l'application sans la demarrer, pour que les tests puissent
  * l'ecouter sur un port ephemere.
  */
-export function createApp({ storage, token, events, network }) {
+export function createApp({ storage, events, network, persisterToken }) {
   const app = express();
 
   app.use(express.json());
-  app.use('/api', createAuthMiddleware(token), createApiRouter({ storage, events, network }));
+  app.use(
+    '/api',
+    createAuthMiddleware(() => network.token),
+    createApiRouter({ storage, events, network, persisterToken }),
+  );
   app.use(express.static(DOSSIER_PUBLIC));
 
   app.use((err, req, res, next) => {

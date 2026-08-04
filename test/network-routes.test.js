@@ -25,7 +25,13 @@ async function demarrer() {
     token: TOKEN,
   };
 
-  const app = createApp({ storage, token: TOKEN, events: createEventHub(), network });
+  const persistes = [];
+  const app = createApp({
+    storage,
+    events: createEventHub(),
+    network,
+    persisterToken: async (token) => { persistes.push(token); },
+  });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
@@ -33,6 +39,8 @@ async function demarrer() {
 
   return {
     network,
+    persistes,
+    base,
     api: (chemin, options = {}) =>
       fetch(`${base}${chemin}`, {
         ...options,
@@ -86,4 +94,36 @@ test('POST /api/network refuse une adresse absente de la liste', async (t) => {
   assert.equal(res.status, 400);
   assert.equal((await res.json()).error, 'Adresse inconnue');
   assert.equal(ctx.network.active, '192.168.1.20');
+});
+
+test('POST /api/network/token change le jeton, le persiste et invalide l ancien', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const reponse = await ctx.api('/api/network/token', { method: 'POST' });
+  assert.equal(reponse.status, 200);
+
+  const etat = await reponse.json();
+  assert.match(etat.token, /^[0-9a-f]{32}$/);
+  assert.notEqual(etat.token, TOKEN);
+  assert.equal(ctx.network.token, etat.token);
+  assert.equal(etat.url, `http://192.168.1.20:4455/?t=${etat.token}`);
+
+  // Le nouveau jeton doit avoir ete confie a la persistance.
+  assert.deepEqual(ctx.persistes, [etat.token]);
+
+  // L'ancien jeton ne doit plus ouvrir aucune porte.
+  assert.equal((await ctx.api('/api/files')).status, 401);
+
+  const avecNouveau = await fetch(`${ctx.base}/api/files?t=${etat.token}`);
+  assert.equal(avecNouveau.status, 200);
+});
+
+test('POST /api/network/token exige le jeton courant', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const res = await fetch(`${ctx.base}/api/network/token`, { method: 'POST' });
+  assert.equal(res.status, 401);
+  assert.equal(ctx.network.token, TOKEN);
 });

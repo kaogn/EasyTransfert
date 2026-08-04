@@ -20,8 +20,11 @@ Concrètement, sans enrobage :
   téléchargement. Quiconque peut observer le trafic réseau est en mesure de le lire.
 - **Qui détient ce jeton est maître du dossier partagé.** Il peut lister, télécharger,
   déposer et *supprimer tous les fichiers*, depuis n'importe quel appareil du réseau.
-- **Il n'y a ni compte, ni permissions, ni journal.** Le jeton, régénéré à chaque
-  démarrage, est l'unique barrière.
+- **Il n'y a ni compte, ni permissions, ni journal.** Le jeton est l'unique barrière.
+- **Le jeton survit aux redémarrages**, pour que le téléphone puisse garder la page en
+  favori au lieu de rescanner à chaque fois. Un jeton qui fuite reste donc valable jusqu'à
+  ce que vous cliquiez sur **« Générer un nouveau jeton »** sur le PC, ce qui déconnecte
+  aussitôt tous les appareils.
 
 **Ne lancez pas ce programme sur un Wi-Fi que vous ne maîtrisez pas** — résidence
 étudiante, bureau, café, hôtel, espace de coworking, ou toute connexion partagée. Sur un
@@ -44,6 +47,9 @@ bout en bout — [LocalSend](https://localsend.org) fait très bien le travail.
 - Glisser-déposer depuis le PC, sélecteur de fichiers depuis le téléphone, barre de
   progression.
 - Suppression d'un fichier, ou de tous d'un coup.
+- **Le lien reste valable d'un démarrage à l'autre** : on appaire le téléphone une fois, on
+  ajoute la page à son écran d'accueil, et on ne scanne plus jamais. Un bouton sur le PC
+  délivre un nouveau jeton en cas de besoin.
 - Les noms accentués survivent à l'aller-retour.
 - **Aucune requête sortante.** Pas de CDN, pas de police distante, pas de service tiers,
   pas de télémétrie. Rien ne sort du réseau local.

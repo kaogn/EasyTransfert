@@ -2,3 +2,4 @@ node_modules/
 partage/
 *.part
 dist/
+.token
