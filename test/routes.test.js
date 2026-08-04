@@ -167,3 +167,15 @@ test('DELETE /api/files exige le token', async (t) => {
   assert.equal((await fetch(`${ctx.base}/api/files`, { method: 'DELETE' })).status, 401);
   assert.equal((await (await ctx.api('/api/files')).json()).length, 1);
 });
+
+test('un champ de formulaire inattendu renvoie une erreur JSON', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const form = new FormData();
+  form.append('other', new Blob(['x']), 'inattendu.txt');
+  const res = await ctx.api('/api/upload', { method: 'POST', body: form });
+
+  assert.equal(res.status, 413);
+  assert.match((await res.json()).error, /Trop de fichiers/i);
+});

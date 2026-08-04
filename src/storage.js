@@ -32,6 +32,23 @@ export function createStorage(rootDir) {
     await fs.mkdir(root, { recursive: true });
   }
 
+  async function cleanupPartials(maxAgeMs = 24 * 60 * 60 * 1000) {
+    await ensureRoot();
+    const maintenant = Date.now();
+    const entrees = await fs.readdir(root, { withFileTypes: true });
+    let supprimes = 0;
+
+    for (const entree of entrees) {
+      if (!entree.isFile() || !entree.name.endsWith('.part')) continue;
+      const chemin = path.join(root, entree.name);
+      const stat = await fs.stat(chemin);
+      if (maintenant - stat.mtimeMs < maxAgeMs) continue;
+      await fs.rm(chemin, { force: true });
+      supprimes += 1;
+    }
+    return supprimes;
+  }
+
   /**
    * Traduit un identifiant client en chemin absolu, en garantissant qu'il reste
    * dans le dossier partage. C'est la seule porte d'entree autorisee vers le disque.
@@ -102,5 +119,14 @@ export function createStorage(rootDir) {
     return fichiers.length;
   }
 
-  return { rootDir: root, ensureRoot, list, resolve, uniqueName, remove, removeAll };
+  return {
+    rootDir: root,
+    ensureRoot,
+    cleanupPartials,
+    list,
+    resolve,
+    uniqueName,
+    remove,
+    removeAll,
+  };
 }

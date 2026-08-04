@@ -34,6 +34,10 @@ function ouvrirNavigateur(url) {
 async function demarrer() {
   const storage = createStorage(DOSSIER_PARTAGE);
   await storage.ensureRoot();
+  const partialsSupprimes = await storage.cleanupPartials();
+  if (partialsSupprimes > 0) {
+    console.log(`${partialsSupprimes} envoi(s) temporaire(s) abandonné(s) supprimé(s).`);
+  }
 
   const candidates = listCandidateAddresses();
   if (candidates.length === 0) {

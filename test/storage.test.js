@@ -99,3 +99,16 @@ test('removeAll sur un dossier vide ne leve pas', async () => {
   const storage = await tempStorage();
   assert.equal(await storage.removeAll(), 0);
 });
+
+test('cleanupPartials supprime les envois anciens mais conserve les récents', async () => {
+  const storage = await tempStorage();
+  const ancien = path.join(storage.rootDir, 'ancien.part');
+  const recent = path.join(storage.rootDir, 'recent.part');
+  await fs.writeFile(ancien, 'a');
+  await fs.writeFile(recent, 'r');
+  const dateAncienne = new Date(Date.now() - 2_000);
+  await fs.utimes(ancien, dateAncienne, dateAncienne);
+
+  assert.equal(await storage.cleanupPartials(1_000), 1);
+  assert.deepEqual(await fs.readdir(storage.rootDir), ['recent.part']);
+});
