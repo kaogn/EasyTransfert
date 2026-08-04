@@ -1,0 +1,61 @@
+name: Release
+
+# Publie l'archive autonome quand un tag de version est pousse :
+#   git tag v1.0.0 && git push origin v1.0.0
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Lancer les tests
+        run: npm test
+
+      # Le script embarque le node.exe du runner, donc exactement la version
+      # testee juste au-dessus, et joint le texte de la licence de Node.
+      - name: Construire l'archive autonome
+        run: powershell -ExecutionPolicy Bypass -File distribution\creer-archive.ps1
+
+      - name: Verifier que l'archive est complete
+        shell: pwsh
+        run: |
+          $attendus = @(
+            'dist\EasyTransfert\node\node.exe',
+            'dist\EasyTransfert\node\LICENSE.txt',
+            'dist\EasyTransfert\LICENSE.txt',
+            'dist\EasyTransfert\Lancer EasyTransfert.bat',
+            'dist\EasyTransfert\Mode d''emploi.html',
+            'dist\EasyTransfert\server.js'
+          )
+          foreach ($f in $attendus) {
+            if (-not (Test-Path $f)) { throw "Fichier manquant dans l'archive : $f" }
+          }
+          if (Test-Path 'dist\EasyTransfert\partage') {
+            throw "Le dossier partage ne doit jamais etre publie."
+          }
+          Write-Host 'Archive conforme.'
+
+      # Un declenchement manuel sert a verifier la construction : il ne publie rien.
+      - name: Publier la release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create ${{ github.ref_name }} dist/EasyTransfert.zip --generate-notes
