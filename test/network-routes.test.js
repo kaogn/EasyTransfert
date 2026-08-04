@@ -46,7 +46,12 @@ async function demarrer() {
         ...options,
         headers: { 'X-Transfer-Token': TOKEN, ...(options.headers ?? {}) },
       }),
-    fermer: () => new Promise((r) => server.close(r)),
+    // closeAllConnections est indispensable ici : un flux SSE encore ouvert
+    // empecherait server.close() de rendre la main, et le test resterait pendu.
+    fermer: () => new Promise((r) => {
+      server.closeAllConnections();
+      server.close(r);
+    }),
   };
 }
 
@@ -126,4 +131,21 @@ test('POST /api/network/token exige le jeton courant', async (t) => {
   const res = await fetch(`${ctx.base}/api/network/token`, { method: 'POST' });
   assert.equal(res.status, 401);
   assert.equal(ctx.network.token, TOKEN);
+});
+
+test('POST /api/network/token coupe les flux SSE ouverts avec l ancien jeton', { timeout: 10_000 }, async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  // Un appareil deja connecte, authentifie avec l'ancien jeton.
+  const flux = await ctx.api('/api/events');
+  assert.equal(flux.status, 200);
+  const lecteur = flux.body.getReader();
+
+  await ctx.api('/api/network/token', { method: 'POST' });
+
+  // Le flux doit se terminer de lui-meme : sans cela, l'appareil evince
+  // continuerait de recevoir les notifications malgre la revocation.
+  const { done } = await lecteur.read();
+  assert.equal(done, true, 'le flux SSE doit se fermer apres la revocation');
 });

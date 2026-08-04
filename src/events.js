@@ -23,9 +23,22 @@ export function createEventHub() {
     for (const res of abonnes) res.write(message);
   }
 
+  /**
+   * Ferme tous les flux ouverts. Un flux SSE n'est authentifie qu'a son
+   * ouverture : sans cette coupure explicite, un appareil resterait a l'ecoute
+   * apres la revocation du jeton qui lui avait donne acces.
+   */
+  function disconnectAll() {
+    // On itere sur une copie : res.end() declenche 'close', qui retire
+    // l'abonne de l'ensemble en cours de parcours.
+    for (const res of [...abonnes]) res.end();
+    abonnes.clear();
+  }
+
   return {
     subscribe,
     broadcast,
+    disconnectAll,
     get count() {
       return abonnes.size;
     },

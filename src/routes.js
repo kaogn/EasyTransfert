@@ -133,6 +133,10 @@ export function createApiRouter({ storage, events, network, persisterToken }) {
   router.post('/network/token', async (req, res) => {
     network.token = createToken();
     if (persisterToken) await persisterToken(network.token);
+    // Les routes HTTP revalident le jeton a chaque appel, mais un flux SSE
+    // n'est verifie qu'a son ouverture : il faut le couper explicitement pour
+    // que la revocation soit reellement totale, comme l'annonce l'interface.
+    events.disconnectAll();
     res.json(await etatReseau());
   });
 

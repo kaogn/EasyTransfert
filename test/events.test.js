@@ -12,6 +12,10 @@ function fausseReponse() {
   res.writeHead = (code, entetes) => { res.entetes = entetes; return res; };
   res.write = (chunk) => { res.ecrit.push(chunk); return true; };
   res.flushHeaders = () => {};
+  res.termine = false;
+  // Node emet 'close' quand la reponse se termine : on reproduit ce couplage,
+  // sinon le test ne prouverait pas que le hub oublie bien l'abonne.
+  res.end = () => { res.termine = true; res.emit('close'); };
   return res;
 }
 
@@ -45,4 +49,20 @@ test('un abonne deconnecte est oublie', () => {
 
   assert.equal(hub.count, 0);
   hub.broadcast('files-changed'); // ne doit pas lever
+});
+
+test('disconnectAll ferme tous les flux et vide la liste des abonnes', () => {
+  const hub = createEventHub();
+  const a = fausseReponse();
+  const b = fausseReponse();
+  hub.subscribe(a);
+  hub.subscribe(b);
+
+  hub.disconnectAll();
+
+  assert.equal(a.termine, true);
+  assert.equal(b.termine, true);
+  assert.equal(hub.count, 0);
+  hub.broadcast('files-changed'); // ne doit pas lever ni ecrire
+  assert.equal(a.ecrit.length, 0);
 });
