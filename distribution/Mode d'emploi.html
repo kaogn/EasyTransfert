@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EasyTransfert — Mode d'emploi</title>
+    <style>
+      :root {
+        --accent: #2f7fd8;
+        --texte: #1c2027;
+        --attenue: #5b6472;
+        --bordure: #dfe3e9;
+        --fond-doux: #f4f7fb;
+        --alerte: #b8442c;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+        max-width: 46rem;
+        background: #fff;
+        color: var(--texte);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 1.0625rem;
+        line-height: 1.65;
+      }
+
+      h1 {
+        font-size: 1.9rem;
+        margin: 0 0 0.25rem;
+      }
+
+      .sous-titre {
+        color: var(--attenue);
+        margin: 0 0 2.5rem;
+      }
+
+      h2 {
+        font-size: 1.15rem;
+        margin: 2.5rem 0 0.75rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--bordure);
+      }
+
+      ol.etapes {
+        list-style: none;
+        counter-reset: etape;
+        margin: 0;
+        padding: 0;
+      }
+
+      ol.etapes > li {
+        counter-increment: etape;
+        position: relative;
+        padding: 0 0 1.5rem 3.25rem;
+      }
+
+      ol.etapes > li::before {
+        content: counter(etape);
+        position: absolute;
+        left: 0;
+        top: 0.1rem;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      ol.etapes h3 {
+        margin: 0.25rem 0 0.35rem;
+        font-size: 1.0625rem;
+      }
+
+      ol.etapes p { margin: 0.35rem 0; }
+
+      .fichier {
+        display: inline-block;
+        background: var(--fond-doux);
+        border: 1px solid var(--bordure);
+        border-radius: 6px;
+        padding: 0.1rem 0.45rem;
+        font-family: Consolas, monospace;
+        font-size: 0.95rem;
+      }
+
+      .note {
+        background: var(--fond-doux);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 8px 8px 0;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+      }
+
+      .note.attention { border-left-color: var(--alerte); }
+
+      .note p { margin: 0.3rem 0; }
+      .note strong { color: var(--texte); }
+
+      dl { margin: 0; }
+
+      dt {
+        font-weight: 600;
+        margin-top: 1.25rem;
+      }
+
+      dd {
+        margin: 0.25rem 0 0;
+        color: var(--attenue);
+      }
+
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--bordure);
+        color: var(--attenue);
+        font-size: 0.9rem;
+      }
+
+      @media print {
+        body { font-size: 11pt; padding: 0; }
+        h2 { page-break-after: avoid; }
+        ol.etapes > li { page-break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>EasyTransfert</h1>
+    <p class="sous-titre">
+      Envoyer des fichiers entre cet ordinateur et votre téléphone, sans câble et sans
+      rien installer sur le téléphone.
+    </p>
+
+    <h2>Démarrer</h2>
+
+    <ol class="etapes">
+      <li>
+        <h3>Double-cliquez sur <span class="fichier">Lancer EasyTransfert</span></h3>
+        <p>
+          C'est le seul fichier à utiliser. Une fenêtre noire s'ouvre : c'est normal,
+          c'est le programme qui tourne. Ne la fermez pas tant que vous transférez des
+          fichiers.
+        </p>
+      </li>
+
+      <li>
+        <h3>La toute première fois, Windows demande une autorisation</h3>
+        <p>
+          Une fenêtre bleue apparaît et demande si vous autorisez le programme à modifier
+          l'appareil. Cliquez sur <strong>Oui</strong>. Sans cela, le téléphone ne pourra
+          pas se connecter.
+        </p>
+        <p>Cette question n'est posée qu'une seule fois, au premier démarrage.</p>
+      </li>
+
+      <li>
+        <h3>Votre navigateur s'ouvre tout seul</h3>
+        <p>
+          Une page s'affiche avec un grand <strong>QR code</strong> (le carré noir et
+          blanc). C'est cette page qui sert à envoyer et recevoir les fichiers depuis
+          l'ordinateur.
+        </p>
+      </li>
+
+      <li>
+        <h3>Sur le téléphone, scannez le QR code</h3>
+        <p>
+          Ouvrez simplement l'application <strong>Appareil photo</strong> du téléphone et
+          visez le QR code affiché à l'écran de l'ordinateur. Un lien apparaît :
+          touchez-le. La même page s'ouvre sur le téléphone.
+        </p>
+        <div class="note">
+          <p>
+            <strong>Important :</strong> le téléphone doit être connecté au même Wi-Fi que
+            l'ordinateur. S'il est en données mobiles (4G / 5G), cela ne fonctionnera pas.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <h3>Envoyez vos fichiers</h3>
+        <p>
+          Sur l'un ou l'autre appareil, appuyez sur <strong>Envoyer des fichiers</strong>
+          et choisissez ce que vous voulez transférer. Depuis l'ordinateur, vous pouvez
+          aussi faire glisser des fichiers directement dans le cadre en pointillés.
+        </p>
+        <p>
+          Le fichier apparaît <strong>immédiatement</strong> sur l'autre appareil, sans
+          rien recharger. Appuyez sur <strong>Télécharger</strong> pour le récupérer.
+        </p>
+      </li>
+    </ol>
+
+    <h2>Bon à savoir</h2>
+
+    <dl>
+      <dt>Où sont rangés les fichiers ?</dt>
+      <dd>
+        Dans le dossier <span class="fichier">partage</span>, à côté de ce mode d'emploi.
+        Ils y restent tant que vous ne les supprimez pas.
+      </dd>
+
+      <dt>Comment tout effacer d'un coup ?</dt>
+      <dd>
+        Le bouton <strong>Tout supprimer</strong>, à droite de « Fichiers partagés ». Une
+        confirmation est demandée. C'est définitif.
+      </dd>
+
+      <dt>Comment arrêter le programme ?</dt>
+      <dd>
+        Fermez la fenêtre noire. Les fichiers déjà transférés restent sur l'ordinateur.
+      </dd>
+
+      <dt>Est-ce que mes fichiers passent par Internet ?</dt>
+      <dd>
+        Non. Tout reste à l'intérieur de votre réseau Wi-Fi, directement entre les deux
+        appareils. Rien n'est envoyé sur Internet, rien n'est stocké ailleurs.
+      </dd>
+    </dl>
+
+    <h2>Si le téléphone n'arrive pas à ouvrir la page</h2>
+
+    <p>Vérifiez dans cet ordre :</p>
+
+    <dl>
+      <dt>1. Le téléphone est-il sur le même Wi-Fi que l'ordinateur ?</dt>
+      <dd>C'est la cause la plus fréquente. Désactivez les données mobiles pour en être sûr.</dd>
+
+      <dt>2. Essayez une autre adresse</dt>
+      <dd>
+        Sur l'écran de l'ordinateur, sous le QR code, il y a un menu déroulant
+        « Adresse du PC ». Choisissez-en une autre : le QR code change aussitôt, il suffit
+        de le rescanner.
+      </dd>
+
+      <dt>3. Votre réseau Wi-Fi est-il déclaré « privé » ?</dt>
+      <dd>
+        Dans Windows : <em>Paramètres → Réseau et Internet → Wi-Fi → votre réseau</em>,
+        puis cochez <strong>Réseau privé</strong>. Sur un réseau déclaré « public »,
+        Windows bloque volontairement la connexion.
+      </dd>
+    </dl>
+
+    <div class="note attention">
+      <p>
+        <strong>À n'utiliser que sur votre réseau à la maison.</strong> Sur un Wi-Fi
+        public (gare, hôtel, café), n'utilisez pas ce programme : la connexion n'est pas
+        chiffrée.
+      </p>
+    </div>
+
+    <footer>
+      <p>
+        EasyTransfert fonctionne entièrement hors ligne. Il embarque sa propre copie de
+        Node.js (dossier <span class="fichier">node</span>, licence MIT) : rien d'autre
+        n'a besoin d'être installé sur l'ordinateur.
+      </p>
+    </footer>
+  </body>
+</html>
