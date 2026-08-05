@@ -120,7 +120,7 @@ développement.
 npm test
 ```
 
-58 tests, avec le lanceur de tests intégré à Node.
+64 tests, avec le lanceur de tests intégré à Node.
 
 ## État du projet
 

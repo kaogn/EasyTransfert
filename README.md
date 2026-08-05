@@ -115,7 +115,7 @@ Three runtime dependencies (`express`, `multer`, `qrcode`), zero dev dependencie
 npm test
 ```
 
-58 tests, using the Node test runner.
+64 tests, using the Node test runner.
 
 ## Project status
 
