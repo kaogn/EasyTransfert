@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import express from 'express';
 
-import { createAuthMiddleware } from './security.js';
+import { createAuthMiddleware, preuveDeToken, estAdresseLoopback } from './security.js';
 import { createApiRouter } from './routes.js';
 
 const RACINE = path.dirname(fileURLToPath(import.meta.url));
@@ -19,10 +19,20 @@ export function createApp({ storage, events, network, persisterToken }) {
   app.use(express.json());
 
   // Permet a un second lancement de reconnaitre une instance deja en place,
-  // plutot que d'echouer sur un port occupe. Volontairement sans jeton : ne
-  // revele que l'existence du service, que la page d'accueil expose deja.
+  // plutot que d'echouer sur un port occupe. Reserve au loopback : le lanceur
+  // est sur la meme machine, et personne d'autre n'a de raison de sonder.
+  // Repond a un nonce par un HMAC du jeton, ce qui prouve l'identite sans
+  // divulguer quoi que ce soit d'exploitable.
   app.get('/ping', (req, res) => {
-    res.json({ app: 'easytransfert' });
+    if (!estAdresseLoopback(req.socket.remoteAddress)) {
+      res.status(404).end();
+      return;
+    }
+    const nonce = req.query?.n;
+    res.json({
+      app: 'easytransfert',
+      preuve: nonce ? preuveDeToken(network.token, nonce) : undefined,
+    });
   });
 
   app.use(

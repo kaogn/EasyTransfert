@@ -3,6 +3,10 @@
  * d'EasyTransfert deja lancee. Isolee de server.js pour rester testable.
  */
 
+import { randomBytes } from 'node:crypto';
+
+import { verifierPreuve } from './security.js';
+
 const DELAI_PING_MS = 1000;
 
 /**
@@ -53,15 +57,21 @@ export function ecouterSurPremierPortLibre(server, hote, ports) {
  * Determine si le port est occupe par une autre instance d'EasyTransfert,
  * auquel cas il ne faut surtout pas en demarrer une seconde : les deux
  * serviraient le meme dossier sans se synchroniser.
+ *
+ * Se declarer "easytransfert" ne suffit pas : n'importe quel programme local
+ * peut renvoyer cette chaine. L'instance doit prouver qu'elle connait le meme
+ * jeton, sans quoi le lanceur s'appreterait a confier ce jeton a un imposteur.
  */
-export async function instanceExistante(port, hote) {
+export async function instanceExistante(port, hote, token) {
+  const nonce = randomBytes(16).toString('hex');
   try {
-    const reponse = await fetch(`http://${hote}:${port}/ping`, {
+    const reponse = await fetch(`http://${hote}:${port}/ping?n=${nonce}`, {
       signal: AbortSignal.timeout(DELAI_PING_MS),
     });
     if (!reponse.ok) return false;
     const corps = await reponse.json();
-    return corps?.app === 'easytransfert';
+    if (corps?.app !== 'easytransfert') return false;
+    return verifierPreuve(token, nonce, corps.preuve);
   } catch {
     // Personne au bout du fil, service etranger, ou reponse illisible.
     return false;

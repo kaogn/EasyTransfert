@@ -34,6 +34,28 @@ export async function lireOuCreerToken(chemin) {
 }
 
 /**
+ * Preuve qu'on connait le token, sans le divulguer : HMAC du nonce fourni par
+ * celui qui interroge. Sert au lanceur a s'assurer que le service occupant le
+ * port est bien une instance d'EasyTransfert, et non un imposteur local a qui
+ * il s'appreterait a confier le token.
+ */
+export function preuveDeToken(token, nonce) {
+  return crypto.createHmac('sha256', String(token)).update(String(nonce)).digest('hex');
+}
+
+export function verifierPreuve(token, nonce, preuve) {
+  if (typeof preuve !== 'string') return false;
+  return egaliteConstante(preuveDeToken(token, nonce), preuve);
+}
+
+/** Reconnait les adresses locales, y compris la forme IPv4 mappee en IPv6. */
+export function estAdresseLoopback(adresse) {
+  if (typeof adresse !== 'string') return false;
+  const nue = adresse.replace(/^::ffff:/, '');
+  return nue === '127.0.0.1' || adresse === '::1' || nue.startsWith('127.');
+}
+
+/**
  * Le token arrive en en-tete pour les appels fetch et XHR, et en parametre d'URL
  * pour les acces que le navigateur declenche lui-meme : EventSource (SSE) et les
  * liens de telechargement, qui n'acceptent aucun en-tete personnalise.

@@ -25,6 +25,10 @@ Concrètement, sans enrobage :
   favori au lieu de rescanner à chaque fois. Un jeton qui fuite reste donc valable jusqu'à
   ce que vous cliquiez sur **« Générer un nouveau jeton »** sur le PC, ce qui déconnecte
   aussitôt tous les appareils.
+- **Un onglet resté ouvert continue d'appeler l'adresse et le port d'origine**, jeton
+  compris. Si un autre programme prend ce port entre-temps, il recevra ces appels. Le
+  serveur, lui, vérifie l'identité de l'instance en place avant de lui confier quoi que ce
+  soit — mais le navigateur, en HTTP simple, n'a aucun moyen de le faire.
 
 **Ne lancez pas ce programme sur un Wi-Fi que vous ne maîtrisez pas** — résidence
 étudiante, bureau, café, hôtel, espace de coworking, ou toute connexion partagée. Sur un

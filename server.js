@@ -68,7 +68,7 @@ async function demarrer() {
   // Relancer le programme alors qu'il tourne deja ne doit pas produire une
   // erreur : on ouvre simplement la page de l'instance en place. Deux serveurs
   // sur le meme dossier afficheraient des listes desynchronisees.
-  if (await instanceExistante(PORT_PREFERE, '127.0.0.1')) {
+  if (await instanceExistante(PORT_PREFERE, '127.0.0.1', token)) {
     console.log('EasyTransfert tourne déjà : ouverture de la page existante.');
     ouvrirNavigateur(`http://${network.active}:${PORT_PREFERE}/?t=${token}`);
     return;

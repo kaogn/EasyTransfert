@@ -11,6 +11,7 @@ import { createStorage } from '../src/storage.js';
 import { createEventHub } from '../src/events.js';
 
 const HOTE = '127.0.0.1';
+const JETON = 'c'.repeat(32);
 
 /** Occupe un port et rend son numero, pour simuler un conflit reel. */
 async function occuperUnPort(t) {
@@ -28,7 +29,7 @@ async function appEasyTransfert(t) {
   const app = createApp({
     storage,
     events: createEventHub(),
-    network: { candidates: [], active: HOTE, port: 0, token: 'c'.repeat(32) },
+    network: { candidates: [], active: HOTE, port: 0, token: JETON },
   });
   const serveur = await new Promise((resolve) => {
     const s = app.listen(0, HOTE, () => resolve(s));
@@ -71,14 +72,32 @@ test('ecouterSurPremierPortLibre echoue quand toute la plage est occupee', async
   );
 });
 
-test('instanceExistante reconnait une autre instance d EasyTransfert', async (t) => {
+test('instanceExistante reconnait une instance qui partage le meme jeton', async (t) => {
   const port = await appEasyTransfert(t);
-  assert.equal(await instanceExistante(port, HOTE), true);
+  assert.equal(await instanceExistante(port, HOTE, JETON), true);
 });
 
 test('instanceExistante rejette un service etranger sur le meme port', async (t) => {
   const port = await occuperUnPort(t);
-  assert.equal(await instanceExistante(port, HOTE), false);
+  assert.equal(await instanceExistante(port, HOTE, JETON), false);
+});
+
+test('instanceExistante demasque un imposteur qui se declare EasyTransfert', async (t) => {
+  // Repond exactement comme une vraie instance, mais ne connait pas le jeton :
+  // sans preuve verifiable, lui confier le jeton reviendrait a le lui offrir.
+  const imposteur = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ app: 'easytransfert', preuve: 'a'.repeat(64) }));
+  });
+  await new Promise((r) => imposteur.listen(0, HOTE, r));
+  t.after(() => new Promise((r) => { imposteur.closeAllConnections(); imposteur.close(r); }));
+
+  assert.equal(await instanceExistante(imposteur.address().port, HOTE, JETON), false);
+});
+
+test('instanceExistante rejette une instance dont le jeton differe', async (t) => {
+  const port = await appEasyTransfert(t);
+  assert.equal(await instanceExistante(port, HOTE, 'd'.repeat(32)), false);
 });
 
 test('instanceExistante rejette un port ou personne ne repond', async () => {

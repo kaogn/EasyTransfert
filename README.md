@@ -25,6 +25,10 @@ Concretely, and without sugar-coating it:
   bookmark instead of rescanning every time. A leaked token therefore stays valid until
   you press **« Générer un nouveau jeton »** on the PC, which immediately kicks out every
   connected device.
+- **A tab left open keeps calling its original address and port**, token included. Should
+  another program take over that port in the meantime, it will receive those calls. The
+  server does verify the identity of a running instance before handing it anything — but a
+  browser, over plain HTTP, has no way to do the same.
 
 **Do not run this on a Wi-Fi network you do not control** — student housing, office,
 café, hotel, coworking space, or any shared connection. On such a network, treat every

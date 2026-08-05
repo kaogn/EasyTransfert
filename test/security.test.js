@@ -10,6 +10,9 @@ import {
   createAuthMiddleware,
   lireOuCreerToken,
   ecrireToken,
+  preuveDeToken,
+  verifierPreuve,
+  estAdresseLoopback,
 } from '../src/security.js';
 
 async function fichierTemporaire() {
@@ -118,4 +121,40 @@ test('ecrireToken remplace le token persiste', async () => {
 
   assert.notEqual(nouveau, premier);
   assert.equal(await lireOuCreerToken(fichier), nouveau);
+});
+
+test('preuveDeToken produit un HMAC hexadecimal lie au nonce', () => {
+  const token = createToken();
+  const a = preuveDeToken(token, 'nonce-1');
+  const b = preuveDeToken(token, 'nonce-2');
+
+  assert.match(a, /^[0-9a-f]{64}$/);
+  assert.notEqual(a, b, 'un nonce different doit donner une preuve differente');
+  assert.equal(preuveDeToken(token, 'nonce-1'), a, 'la preuve doit etre reproductible');
+});
+
+test('preuveDeToken ne revele pas le token', () => {
+  const token = createToken();
+  assert.ok(!preuveDeToken(token, 'nonce').includes(token));
+});
+
+test('verifierPreuve accepte la bonne preuve et refuse tout le reste', () => {
+  const token = createToken();
+  const autre = createToken();
+  const nonce = 'abc123';
+  const preuve = preuveDeToken(token, nonce);
+
+  assert.equal(verifierPreuve(token, nonce, preuve), true);
+  assert.equal(verifierPreuve(token, 'autre-nonce', preuve), false);
+  assert.equal(verifierPreuve(autre, nonce, preuve), false, 'un autre token ne doit pas passer');
+  assert.equal(verifierPreuve(token, nonce, 'forgee'), false);
+  assert.equal(verifierPreuve(token, nonce, undefined), false);
+});
+
+test('estAdresseLoopback reconnait les formes locales et rejette le reste', () => {
+  assert.equal(estAdresseLoopback('127.0.0.1'), true);
+  assert.equal(estAdresseLoopback('::1'), true);
+  assert.equal(estAdresseLoopback('::ffff:127.0.0.1'), true, 'forme IPv4 mappee en IPv6');
+  assert.equal(estAdresseLoopback('192.168.1.20'), false);
+  assert.equal(estAdresseLoopback(undefined), false);
 });
