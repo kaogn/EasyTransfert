@@ -25,6 +25,12 @@ Concrètement, sans enrobage :
   favori au lieu de rescanner à chaque fois. Un jeton qui fuite reste donc valable jusqu'à
   ce que vous cliquiez sur **« Générer un nouveau jeton »** sur le PC, ce qui déconnecte
   aussitôt tous les appareils.
+- **Un code à six chiffres permet d'obtenir le jeton** sans authentification préalable :
+  c'est le mécanisme d'appairage d'un nouvel appareil. Il est protégé par une limitation
+  stricte du débit — cinq essais, puis trente secondes de blocage qui s'appliquent même au
+  bon code, et rotation du code à chaque rafale. Sur un réseau maîtrisé, forcer un million
+  de combinaisons à ce rythme prendrait des années. Sur un réseau hostile, cela reste un
+  point d'entrée à considérer.
 - **Un onglet resté ouvert continue d'appeler l'adresse et le port d'origine**, jeton
   compris. Si un autre programme prend ce port entre-temps, il recevra ces appels. Le
   serveur, lui, vérifie l'identité de l'instance en place avant de lui confier quoi que ce
@@ -54,6 +60,9 @@ bout en bout — [LocalSend](https://localsend.org) fait très bien le travail.
 - **Le lien reste valable d'un démarrage à l'autre** : on appaire le téléphone une fois, on
   ajoute la page à son écran d'accueil, et on ne scanne plus jamais. Un bouton sur le PC
   délivre un nouveau jeton en cas de besoin.
+- **Marche aussi d'un PC à l'autre** : un seul ordinateur lance le programme, l'autre ouvre
+  l'adresse et saisit le code à six chiffres affiché en face. Pas de QR code à scanner
+  quand on n'a pas de caméra, pas de jeton de 32 caractères à recopier.
 - Les noms accentués survivent à l'aller-retour.
 - **Aucune requête sortante.** Pas de CDN, pas de police distante, pas de service tiers,
   pas de télémétrie. Rien ne sort du réseau local.
@@ -108,6 +117,7 @@ chemin sortant du dossier partagé.
 | `src/storage.js` | dossier partagé : sanitisation, identifiants, listing, confinement, suppression |
 | `src/network.js` | détection des adresses IPv4 candidates du réseau local |
 | `src/demarrage.js` | choix du port et détection d'une instance déjà lancée |
+| `src/appairage.js` | code court et jetable pour connecter un nouvel appareil |
 | `src/security.js` | génération du jeton et middleware d'authentification |
 | `src/events.js` | diffusion des changements en SSE |
 | `src/routes.js` | routeur de l'API |
@@ -120,7 +130,7 @@ développement.
 npm test
 ```
 
-64 tests, avec le lanceur de tests intégré à Node.
+80 tests, avec le lanceur de tests intégré à Node.
 
 ## État du projet
 

@@ -149,3 +149,98 @@ test('POST /api/network/token coupe les flux SSE ouverts avec l ancien jeton', {
   const { done } = await lecteur.read();
   assert.equal(done, true, 'le flux SSE doit se fermer apres la revocation');
 });
+
+test('GET /api/network expose le code d appairage au PC authentifie', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const corps = await (await ctx.api('/api/network')).json();
+  assert.match(corps.appairage.code, /^[0-9]{6}$/);
+  assert.ok(corps.appairage.expireDansMs > 0);
+});
+
+test('POST /appairage echange un code valide contre le jeton, sans authentification', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const { appairage } = await (await ctx.api('/api/network')).json();
+
+  // Volontairement sans en-tete d'authentification : c'est le point d'entree
+  // d'un appareil qui ne connait encore rien.
+  const res = await fetch(`${ctx.base}/appairage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: appairage.code }),
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).token, TOKEN);
+});
+
+test('POST /appairage refuse un code faux sans rien divulguer', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const res = await fetch(`${ctx.base}/appairage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: '000000' }),
+  });
+
+  assert.equal(res.status, 401);
+  const corps = await res.json();
+  assert.equal(corps.token, undefined, 'aucun jeton ne doit fuiter');
+  assert.ok(!JSON.stringify(corps).includes(TOKEN));
+});
+
+test('POST /appairage fait tourner le code apres une rafale d essais rates', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const avant = (await (await ctx.api('/api/network')).json()).appairage.code;
+  const faux = avant === '000000' ? '111111' : '000000';
+
+  for (let i = 0; i < 5; i += 1) {
+    await fetch(`${ctx.base}/appairage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: faux }),
+    });
+  }
+
+  const apres = (await (await ctx.api('/api/network')).json()).appairage.code;
+  assert.notEqual(apres, avant, 'le code doit avoir change');
+
+  // Et l'ancien code ne doit plus rien ouvrir. La rafale ayant declenche le
+  // verrou, la reponse est un 429 ; l'essentiel est qu'aucun jeton ne sorte.
+  const res = await fetch(`${ctx.base}/appairage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: avant }),
+  });
+  assert.equal(res.status, 429);
+  assert.equal((await res.json()).token, undefined);
+});
+
+test('POST /appairage repond 429 et indique l attente apres trop de tentatives', async (t) => {
+  const ctx = await demarrer();
+  t.after(ctx.fermer);
+
+  const essai = (code) => fetch(`${ctx.base}/appairage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+
+  for (let i = 0; i < 5; i += 1) await essai('000000');
+
+  const res = await essai('000000');
+  assert.equal(res.status, 429);
+  const corps = await res.json();
+  assert.match(corps.error, /trop de tentatives/i);
+  assert.ok(corps.reessayerDansMs > 0);
+
+  // Meme le code exact doit attendre : sinon le verrou ne bornerait rien.
+  const codeReel = (await (await ctx.api('/api/network')).json()).appairage.code;
+  assert.equal((await essai(codeReel)).status, 429);
+});

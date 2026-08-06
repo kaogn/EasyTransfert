@@ -13,6 +13,29 @@
     </header>
 
     <main>
+      <section id="bloc-appairage" class="carte" hidden>
+        <h2>Connecter cet appareil</h2>
+        <p class="aide">
+          Sur l'ordinateur qui partage les fichiers, un code à six chiffres est affiché
+          sous le QR code. Saisissez-le ici.
+        </p>
+        <form id="formulaire-appairage">
+          <input
+            id="champ-code"
+            class="champ-code"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="6"
+            autocomplete="one-time-code"
+            placeholder="000000"
+            aria-label="Code à six chiffres"
+          />
+          <button type="submit">Connecter</button>
+        </form>
+        <p id="erreur-appairage" class="etat hors-ligne" hidden></p>
+      </section>
+
       <section id="bloc-qr" class="carte pc-seulement">
         <h2>Scanner depuis le téléphone</h2>
         <img id="qr" alt="QR code d'accès" />
@@ -22,6 +45,14 @@
         <p class="aide">
           Si le téléphone n'arrive pas à ouvrir la page, essayez une autre adresse.
         </p>
+        <div class="code-appairage">
+          <span class="code-libelle">Depuis un autre ordinateur</span>
+          <span id="code-appairage" class="code-valeur">------</span>
+          <span class="aide">
+            Sur l'autre PC, ouvrir <b id="adresse-courte"></b> et saisir ce code.
+          </span>
+        </div>
+
         <button id="regenerer-jeton" class="secondaire" type="button">
           Générer un nouveau jeton
         </button>
@@ -32,7 +63,7 @@
         </p>
       </section>
 
-      <section class="carte">
+      <section id="bloc-fichiers" class="carte">
         <div id="zone-depot" class="zone-depot">
           <p class="pc-seulement">Glissez vos fichiers ici</p>
           <button id="bouton-parcourir" type="button">Envoyer des fichiers</button>

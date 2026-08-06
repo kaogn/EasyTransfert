@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 
 import { createAuthMiddleware, preuveDeToken, estAdresseLoopback } from './security.js';
+import { createCodeAppairage } from './appairage.js';
 import { createApiRouter } from './routes.js';
 
 const RACINE = path.dirname(fileURLToPath(import.meta.url));
@@ -13,10 +14,30 @@ const DOSSIER_PUBLIC = path.join(RACINE, '..', 'public');
  * Assemble l'application sans la demarrer, pour que les tests puissent
  * l'ecouter sur un port ephemere.
  */
-export function createApp({ storage, events, network, persisterToken }) {
+export function createApp({ storage, events, network, persisterToken, appairage = createCodeAppairage() }) {
   const app = express();
 
   app.use(express.json());
+
+  // Point d'entree d'un appareil qui ne connait encore rien : il echange un
+  // code court, affiche sur le PC, contre le jeton de session. Necessairement
+  // hors du middleware d'authentification — c'est justement ce qu'il vient
+  // chercher. La protection contre la force brute est dans createCodeAppairage.
+  app.post('/appairage', (req, res) => {
+    if (appairage.estVerrouille()) {
+      const secondes = Math.ceil(appairage.verrouRestantMs() / 1000);
+      res.status(429).json({
+        error: `Trop de tentatives. Patientez ${secondes} seconde(s) avant de réessayer.`,
+        reessayerDansMs: appairage.verrouRestantMs(),
+      });
+      return;
+    }
+    if (!appairage.verifier(req.body?.code)) {
+      res.status(401).json({ error: 'Code incorrect ou expiré.' });
+      return;
+    }
+    res.json({ token: network.token });
+  });
 
   // Permet a un second lancement de reconnaitre une instance deja en place,
   // plutot que d'echouer sur un port occupe. Reserve au loopback : le lanceur
@@ -38,7 +59,7 @@ export function createApp({ storage, events, network, persisterToken }) {
   app.use(
     '/api',
     createAuthMiddleware(() => network.token),
-    createApiRouter({ storage, events, network, persisterToken }),
+    createApiRouter({ storage, events, network, persisterToken, appairage }),
   );
   app.use(express.static(DOSSIER_PUBLIC));
 

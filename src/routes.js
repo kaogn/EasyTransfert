@@ -30,7 +30,7 @@ function statutDepuisErreur(err) {
   return 500;
 }
 
-export function createApiRouter({ storage, events, network, persisterToken }) {
+export function createApiRouter({ storage, events, network, persisterToken, appairage }) {
   const router = express.Router();
 
   const upload = multer({
@@ -111,6 +111,11 @@ export function createApiRouter({ storage, events, network, persisterToken }) {
       token: network.token,
       url,
       qr: await QRCode.toDataURL(url, { width: 320, margin: 1 }),
+      // Affiche sur le PC pour etre dicte a qui veut appairer un appareil
+      // depuis lequel scanner le QR code n'a pas de sens : un autre ordinateur.
+      appairage: appairage
+        ? { code: appairage.code, expireDansMs: appairage.expireDansMs() }
+        : undefined,
     };
   }
 

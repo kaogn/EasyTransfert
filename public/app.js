@@ -25,14 +25,17 @@ const champUrl = document.querySelector('#url');
 const selecteurIp = document.querySelector('#selecteur-ip');
 const boutonRegenerer = document.querySelector('#regenerer-jeton');
 
+const blocAppairage = document.querySelector('#bloc-appairage');
+const blocFichiers = document.querySelector('#bloc-fichiers');
+const formulaireAppairage = document.querySelector('#formulaire-appairage');
+const champCode = document.querySelector('#champ-code');
+const erreurAppairage = document.querySelector('#erreur-appairage');
+const codeAppairage = document.querySelector('#code-appairage');
+const adresseCourte = document.querySelector('#adresse-courte');
+
 function afficherEtat(message, horsLigne = false) {
   etat.textContent = message;
   etat.classList.toggle('hors-ligne', horsLigne);
-}
-
-if (!token) {
-  afficherEtat('Aucun jeton d’accès : rescannez le QR code depuis le PC.', true);
-  throw new Error('token absent');
 }
 
 function api(chemin, options = {}) {
@@ -181,6 +184,12 @@ async function chargerReseau(etatReseau) {
   imageQr.src = donnees.qr;
   champUrl.textContent = donnees.url;
 
+  if (donnees.appairage) {
+    codeAppairage.textContent = donnees.appairage.code;
+    // L'adresse sans le jeton : c'est elle qu'on dicte a l'autre ordinateur.
+    adresseCourte.textContent = donnees.url.replace(/^https?:\/\//, '').replace(/\/\?t=.*$/, '');
+  }
+
   selecteurIp.replaceChildren();
   for (const candidat of donnees.candidates) {
     const option = document.createElement('option');
@@ -245,6 +254,68 @@ boutonRegenerer.addEventListener('click', async () => {
   afficherEtat('Nouveau jeton en place. Rescannez le QR code depuis le téléphone.');
 });
 
-await chargerReseau();
-await rafraichirListe();
-ecouterEvenements();
+/** Rythme de rafraichissement du code d'appairage affiche sur le PC. */
+const INTERVALLE_CODE_MS = 60_000;
+
+async function demarrer() {
+  blocAppairage.hidden = true;
+  blocQr.hidden = false;
+  blocFichiers.hidden = false;
+
+  await chargerReseau();
+  await rafraichirListe();
+  ecouterEvenements();
+
+  // Le code d'appairage a une duree de vie limitee : sans ce rafraichissement,
+  // le PC afficherait un code perime et l'autre ordinateur ne pourrait pas se
+  // connecter.
+  setInterval(() => {
+    chargerReseau().catch(() => {});
+  }, INTERVALLE_CODE_MS);
+}
+
+function demanderAppairage(message) {
+  blocAppairage.hidden = false;
+  blocQr.hidden = true;
+  blocFichiers.hidden = true;
+  erreurAppairage.hidden = !message;
+  if (message) erreurAppairage.textContent = message;
+  afficherEtat('Cet appareil n’est pas encore connecté.');
+  champCode.focus();
+}
+
+formulaireAppairage.addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const code = champCode.value.trim();
+  if (code === '') return;
+
+  const reponse = await fetch('/appairage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!reponse.ok) {
+    champCode.value = '';
+    const corps = await reponse.json().catch(() => ({}));
+    // Le serveur bride les tentatives : mieux vaut dire l'attente que laisser
+    // croire a un code faux et pousser a réessayer en boucle.
+    demanderAppairage(
+      corps.error ?? 'Code incorrect ou expiré. Vérifiez le code affiché sur l’autre ordinateur.',
+    );
+    return;
+  }
+
+  token = (await reponse.json()).token;
+  localStorage.setItem('easytransfert-token', token);
+  champCode.value = '';
+  await demarrer();
+});
+
+if (token) {
+  await demarrer();
+} else {
+  // Plutot qu'une impasse, on propose la seule action utile : saisir le code
+  // affiche sur l'ordinateur qui partage les fichiers.
+  demanderAppairage();
+}

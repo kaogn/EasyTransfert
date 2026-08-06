@@ -25,6 +25,11 @@ Concretely, and without sugar-coating it:
   bookmark instead of rescanning every time. A leaked token therefore stays valid until
   you press **« Générer un nouveau jeton »** on the PC, which immediately kicks out every
   connected device.
+- **A six-digit code hands out the token** without prior authentication: that is how a new
+  device is paired. It is protected by strict rate limiting — five attempts, then a
+  thirty-second lockout that applies to the correct code too, and the code rotates after
+  every burst. On a network you control, brute-forcing a million combinations at that pace
+  would take years. On a hostile network, it remains an entry point to weigh.
 - **A tab left open keeps calling its original address and port**, token included. Should
   another program take over that port in the meantime, it will receive those calls. The
   server does verify the identity of a running instance before handing it anything — but a
@@ -52,6 +57,9 @@ encryption — [LocalSend](https://localsend.org) is a good one.
 - Delete one file, or all of them at once.
 - **The link stays valid across restarts**: pair the phone once, add the page to its home
   screen, and you never scan again. A button on the PC issues a fresh token when needed.
+- **Works PC to PC as well**: one computer runs the program, the other opens the address
+  and types the six-digit code shown across the room. No QR code to scan when there is no
+  camera, no 32-character token to copy by hand.
 - Accented file names survive the round trip.
 - **No outbound requests.** No CDN, no remote font, no third-party service, no telemetry.
   Nothing leaves your local network.
@@ -104,6 +112,7 @@ through a single guarded function that refuses any path escaping the shared fold
 | `src/storage.js` | shared folder: sanitising, ids, listing, containment, deletion |
 | `src/network.js` | detection of candidate LAN IPv4 addresses |
 | `src/demarrage.js` | port selection and detection of an already-running instance |
+| `src/appairage.js` | short-lived code used to pair a new device |
 | `src/security.js` | token generation and auth middleware |
 | `src/events.js` | server-sent events broadcasting |
 | `src/routes.js` | API router |
@@ -115,7 +124,7 @@ Three runtime dependencies (`express`, `multer`, `qrcode`), zero dev dependencie
 npm test
 ```
 
-64 tests, using the Node test runner.
+80 tests, using the Node test runner.
 
 ## Project status
 

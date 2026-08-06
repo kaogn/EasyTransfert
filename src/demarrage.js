@@ -7,7 +7,10 @@ import { randomBytes } from 'node:crypto';
 
 import { verifierPreuve } from './security.js';
 
-const DELAI_PING_MS = 1000;
+// Marge volontairement large : ce delai n'est subi que si le port est occupe,
+// et une seconde suffit a expirer a tort sur une machine chargee — ce qui ferait
+// conclure a tort qu'aucune instance ne tourne, puis demarrer un second serveur.
+const DELAI_PING_MS = 3000;
 
 /**
  * Fait ecouter le serveur sur le premier port disponible de la liste, dans

@@ -21,6 +21,19 @@ async function occuperUnPort(t) {
   return serveur.address().port;
 }
 
+/**
+ * Reserve un port puis le libere aussitot. Des numeros de port fixes rendraient
+ * ces tests dependants de l'etat de la machine : un socket encore en TIME_WAIT
+ * apres une execution precedente suffirait a les faire echouer par intermittence.
+ */
+async function portLibere() {
+  const serveur = http.createServer();
+  await new Promise((r) => serveur.listen(0, HOTE, r));
+  const port = serveur.address().port;
+  await new Promise((r) => serveur.close(r));
+  return port;
+}
+
 /** Une application EasyTransfert complete, ecoutant sur un port ephemere. */
 async function appEasyTransfert(t) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'easytransfert-demarrage-'));
@@ -39,27 +52,31 @@ async function appEasyTransfert(t) {
 }
 
 test('ecouterSurPremierPortLibre retient le port prefere quand il est libre', async (t) => {
+  const prefere = await portLibere();
+  const secours = await portLibere();
+
   const { server, port } = await ecouterSurPremierPortLibre(
     http.createServer(),
     HOTE,
-    [45551, 45552],
+    [prefere, secours],
   );
   t.after(() => new Promise((r) => server.close(r)));
 
-  assert.equal(port, 45551);
+  assert.equal(port, prefere);
 });
 
 test('ecouterSurPremierPortLibre bascule sur le port suivant quand le prefere est pris', async (t) => {
   const pris = await occuperUnPort(t);
+  const secours = await portLibere();
 
   const { server, port } = await ecouterSurPremierPortLibre(
     http.createServer(),
     HOTE,
-    [pris, 45553],
+    [pris, secours],
   );
   t.after(() => new Promise((r) => server.close(r)));
 
-  assert.equal(port, 45553, 'le port occupe doit etre ignore');
+  assert.equal(port, secours, 'le port occupe doit etre ignore');
 });
 
 test('ecouterSurPremierPortLibre echoue quand toute la plage est occupee', async (t) => {
@@ -101,12 +118,5 @@ test('instanceExistante rejette une instance dont le jeton differe', async (t) =
 });
 
 test('instanceExistante rejette un port ou personne ne repond', async () => {
-  // On reserve un port puis on le libere aussitot : c'est le seul moyen fiable
-  // d'obtenir un numero de port dont on sait que rien n'ecoute dessus.
-  const serveur = http.createServer();
-  await new Promise((r) => serveur.listen(0, HOTE, r));
-  const port = serveur.address().port;
-  await new Promise((r) => serveur.close(r));
-
-  assert.equal(await instanceExistante(port, HOTE), false);
+  assert.equal(await instanceExistante(await portLibere(), HOTE, JETON), false);
 });
