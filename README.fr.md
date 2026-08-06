@@ -7,6 +7,35 @@
 Transférer des fichiers entre un PC Windows et un téléphone, sur le Wi-Fi de la maison, en
 scannant un QR code. Rien à installer sur le téléphone : un navigateur suffit.
 
+![Deux fichiers envoyés depuis le téléphone apparaissent en direct sur le PC, puis sont supprimés d'un clic](docs/media/demo.gif)
+
+*Les fichiers envoyés depuis le téléphone apparaissent sur le PC sans rechargement.*
+
+## En un coup d'œil
+
+```mermaid
+flowchart TB
+    subgraph lan["Réseau Wi-Fi domestique — rien ne sort vers Internet"]
+        subgraph pc["PC Windows"]
+            srv["server.js<br/>Express, port 4455"]
+            dossier[("dossier partage/")]
+            srv --- dossier
+        end
+        tel["Téléphone<br/>navigateur"]
+        autre["Autre PC<br/>navigateur"]
+    end
+
+    srv -->|"QR code"| tel
+    srv -->|"code à 6 chiffres"| autre
+    tel -->|"envoi, téléchargement"| srv
+    autre -->|"envoi, téléchargement"| srv
+    srv -->|"SSE : liste à jour en direct"| tel
+    srv -->|"SSE"| autre
+```
+
+Un seul appareil lance le programme. Les autres ouvrent une page web : le téléphone en
+scannant le QR code, un second ordinateur en saisissant un code à six chiffres.
+
 ---
 
 ## ⚠️ À lire avant de s'en servir
@@ -144,6 +173,20 @@ npm test
 ```
 
 80 tests, avec le lanceur de tests intégré à Node.
+
+## Limites assumées
+
+Ce ne sont pas des fonctionnalités manquantes, mais des choix, et chacun a sa raison.
+
+| Choix | Pourquoi |
+|---|---|
+| **Pas de HTTPS** | Un certificat auto-signé afficherait un avertissement rouge sur le téléphone à chaque connexion — exactement l'écran qui fait renoncer un utilisateur non technique. Le projet vise le réseau domestique, où le compromis est acceptable ; il est documenté sans détour plus haut. |
+| **Pas de comptes ni de rôles** | Un seul foyer, deux ou trois appareils. Une base d'utilisateurs coûterait plus de code que tout le reste du projet, pour un besoin inexistant. |
+| **Un seul jeton, tous les droits** | Corollaire du point précédent. C'est la limite la plus réelle : quiconque obtient le jeton peut aussi supprimer. |
+| **Pas de base de données** | Le dossier partagé *est* l'état. Rien à synchroniser, rien à migrer, et les fichiers restent lisibles sans le programme. |
+| **Windows uniquement** | Les lanceurs et la règle de pare-feu sont spécifiques. Le cœur en Node est portable, mais rien n'est testé ailleurs. |
+| **Trois dépendances** | `express`, `multer`, `qrcode`. Aucune dépendance de développement : les tests utilisent le lanceur intégré à Node. Moins de surface, moins de mises à jour de sécurité à suivre. |
+| **Interface en français** | Écrit pour un usage familial. L'anglicisation doublerait la surface à maintenir sans servir l'objectif. |
 
 ## État du projet
 

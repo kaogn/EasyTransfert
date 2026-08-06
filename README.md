@@ -7,6 +7,35 @@
 Send files between a Windows PC and a phone over your home Wi-Fi, by scanning a QR code.
 Nothing to install on the phone — it only needs a browser.
 
+![Two files sent from the phone appear live on the PC, then are deleted in one click](docs/media/demo.gif)
+
+*Files sent from the phone show up on the PC with no refresh.*
+
+## At a glance
+
+```mermaid
+flowchart TB
+    subgraph lan["Home Wi-Fi network — nothing leaves for the Internet"]
+        subgraph pc["Windows PC"]
+            srv["server.js<br/>Express, port 4455"]
+            dossier[("partage/ folder")]
+            srv --- dossier
+        end
+        tel["Phone<br/>browser"]
+        autre["Another PC<br/>browser"]
+    end
+
+    srv -->|"QR code"| tel
+    srv -->|"6-digit code"| autre
+    tel -->|"upload, download"| srv
+    autre -->|"upload, download"| srv
+    srv -->|"SSE: live file list"| tel
+    srv -->|"SSE"| autre
+```
+
+Only one device runs the program. The others just open a web page: the phone by scanning
+the QR code, a second computer by typing a six-digit code.
+
 ---
 
 ## ⚠️ Read this before using it
@@ -137,6 +166,20 @@ npm test
 ```
 
 80 tests, using the Node test runner.
+
+## Deliberate limitations
+
+These are not missing features. They are choices, and each has a reason.
+
+| Choice | Why |
+|---|---|
+| **No HTTPS** | A self-signed certificate would raise a red warning on the phone at every visit — exactly the screen that makes a non-technical user give up. The project targets home networks, where the trade-off is acceptable, and it is documented bluntly above. |
+| **No accounts or roles** | One household, two or three devices. A user store would cost more code than the rest of the project, for a need that does not exist. |
+| **One token, full rights** | The consequence of the previous point. This is the most real limitation: whoever gets the token can also delete. |
+| **No database** | The shared folder *is* the state. Nothing to sync, nothing to migrate, and the files stay readable without the program. |
+| **Windows only** | The launchers and the firewall rule are platform-specific. The Node core is portable, but nothing is tested elsewhere. |
+| **Three dependencies** | `express`, `multer`, `qrcode`. Zero dev dependencies: tests use Node's built-in runner. Less surface, fewer security updates to track. |
+| **French interface** | Written for family use. Translating it would double the maintenance surface without serving the goal. |
 
 ## Project status
 
