@@ -53,9 +53,17 @@ jobs:
           }
           Write-Host 'Archive conforme.'
 
+      - name: Calculer l'empreinte de l'archive
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash 'dist\EasyTransfert.zip' -Algorithm SHA256).Hash.ToLower()
+          # Format usuel de sha256sum : empreinte, deux espaces, nom du fichier.
+          "$hash  EasyTransfert.zip" | Out-File -FilePath 'dist\SHA256SUMS.txt' -Encoding ascii
+          Get-Content 'dist\SHA256SUMS.txt'
+
       # Un declenchement manuel sert a verifier la construction : il ne publie rien.
       - name: Publier la release
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create ${{ github.ref_name }} dist/EasyTransfert.zip --generate-notes
+        run: gh release create ${{ github.ref_name }} dist/EasyTransfert.zip dist/SHA256SUMS.txt --generate-notes

@@ -1,0 +1,30 @@
+name: CI
+
+# Verifie chaque poussee et chaque proposition de modification, pour qu'une
+# regression n'atteigne jamais main sans etre vue.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    # Windows et non Linux : la sanitisation des noms de fichiers vise les
+    # regles de Windows, et ses tests n'ont de sens que sur cette plateforme.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Lancer les tests
+        run: npm test

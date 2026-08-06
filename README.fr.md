@@ -2,6 +2,8 @@
 
 **🇬🇧 [English version](README.md)**
 
+[![CI](https://github.com/kaogn/EasyTransfert/actions/workflows/ci.yml/badge.svg)](https://github.com/kaogn/EasyTransfert/actions/workflows/ci.yml)
+
 Transférer des fichiers entre un PC Windows et un téléphone, sur le Wi-Fi de la maison, en
 scannant un QR code. Rien à installer sur le téléphone : un navigateur suffit.
 
@@ -74,6 +76,17 @@ embarque sa propre copie de Node.js : rien d'autre n'a besoin d'être installé.
 
 > Avant de décompresser : clic droit sur le `.zip` → Propriétés → cocher **Débloquer**.
 > Cela évite un avertissement SmartScreen sur chaque fichier extrait.
+
+Chaque publication contient aussi un `SHA256SUMS.txt`. Pour vérifier que l'archive
+téléchargée est intacte, dans PowerShell :
+
+```powershell
+Get-FileHash EasyTransfert.zip -Algorithm SHA256
+```
+
+L'empreinte affichée doit correspondre à celle du fichier. Cela détecte un téléchargement
+corrompu ou altéré en chemin ; ce n'est pas une signature, puisque l'empreinte est publiée
+au même endroit que l'archive.
 
 Puis double-cliquez sur **`Lancer EasyTransfert`**. Windows demande une fois l'autorisation
 d'ajouter une règle de pare-feu : acceptez, sinon le téléphone ne pourra pas se connecter.

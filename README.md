@@ -2,6 +2,8 @@
 
 **🇫🇷 [Version française](README.fr.md)**
 
+[![CI](https://github.com/kaogn/EasyTransfert/actions/workflows/ci.yml/badge.svg)](https://github.com/kaogn/EasyTransfert/actions/workflows/ci.yml)
+
 Send files between a Windows PC and a phone over your home Wi-Fi, by scanning a QR code.
 Nothing to install on the phone — it only needs a browser.
 
@@ -71,6 +73,16 @@ own copy of Node.js, so nothing else needs to be installed.
 
 > Before unzipping: right-click the `.zip` → Properties → tick **Unblock**. This spares
 > you a SmartScreen warning on every extracted file.
+
+Every release also ships a `SHA256SUMS.txt`. To check the archive you downloaded is
+intact, in PowerShell:
+
+```powershell
+Get-FileHash EasyTransfert.zip -Algorithm SHA256
+```
+
+The printed digest must match the one in the file. This catches a corrupted or tampered
+download; it is not a signature, since the digest is published alongside the archive.
 
 Then double-click **`Lancer EasyTransfert`**. Windows will ask once for permission to add
 a firewall rule — accept it, otherwise the phone cannot connect. Your browser opens on a
