@@ -14,23 +14,21 @@ Nothing to install on the phone — it only needs a browser.
 ## At a glance
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph lan["Home Wi-Fi network — nothing leaves for the Internet"]
-        subgraph pc["Windows PC"]
+        tel["Phone<br/>paired by scanning<br/>the QR code"]
+
+        subgraph pc["The sharing PC"]
             srv["server.js<br/>Express, port 4455"]
             dossier[("partage/ folder")]
-            srv --- dossier
         end
-        tel["Phone<br/>browser"]
-        autre["Another PC<br/>browser"]
+
+        autre["Another PC<br/>paired with a<br/>6-digit code"]
     end
 
-    srv -->|"QR code"| tel
-    srv -->|"6-digit code"| autre
-    tel -->|"upload, download"| srv
-    autre -->|"upload, download"| srv
-    srv -->|"SSE: live file list"| tel
-    srv -->|"SSE"| autre
+    srv --- dossier
+    tel <-->|"upload and download<br/>live file list"| srv
+    autre <-->|"upload and download<br/>live file list"| srv
 ```
 
 Only one device runs the program. The others just open a web page: the phone by scanning

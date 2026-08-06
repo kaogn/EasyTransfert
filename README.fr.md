@@ -14,23 +14,21 @@ scannant un QR code. Rien à installer sur le téléphone : un navigateur suffit
 ## En un coup d'œil
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph lan["Réseau Wi-Fi domestique — rien ne sort vers Internet"]
-        subgraph pc["PC Windows"]
+        tel["Téléphone<br/>connecté en scannant<br/>le QR code"]
+
+        subgraph pc["Le PC qui partage"]
             srv["server.js<br/>Express, port 4455"]
             dossier[("dossier partage/")]
-            srv --- dossier
         end
-        tel["Téléphone<br/>navigateur"]
-        autre["Autre PC<br/>navigateur"]
+
+        autre["Autre PC<br/>connecté avec un<br/>code à 6 chiffres"]
     end
 
-    srv -->|"QR code"| tel
-    srv -->|"code à 6 chiffres"| autre
-    tel -->|"envoi, téléchargement"| srv
-    autre -->|"envoi, téléchargement"| srv
-    srv -->|"SSE : liste à jour en direct"| tel
-    srv -->|"SSE"| autre
+    srv --- dossier
+    tel <-->|"envoi et téléchargement<br/>liste à jour en direct"| srv
+    autre <-->|"envoi et téléchargement<br/>liste à jour en direct"| srv
 ```
 
 Un seul appareil lance le programme. Les autres ouvrent une page web : le téléphone en
