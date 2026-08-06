@@ -5,6 +5,7 @@ import express from 'express';
 
 import { createAuthMiddleware, preuveDeToken, estAdresseLoopback } from './security.js';
 import { createCodeAppairage } from './appairage.js';
+import { createSessionsDepot } from './sessions.js';
 import { createApiRouter } from './routes.js';
 
 const RACINE = path.dirname(fileURLToPath(import.meta.url));
@@ -14,7 +15,14 @@ const DOSSIER_PUBLIC = path.join(RACINE, '..', 'public');
  * Assemble l'application sans la demarrer, pour que les tests puissent
  * l'ecouter sur un port ephemere.
  */
-export function createApp({ storage, events, network, persisterToken, appairage = createCodeAppairage() }) {
+export function createApp({
+  storage,
+  events,
+  network,
+  persisterToken,
+  appairage = createCodeAppairage(),
+  sessions = createSessionsDepot(),
+}) {
   const app = express();
 
   app.use(express.json());
@@ -58,9 +66,15 @@ export function createApp({ storage, events, network, persisterToken, appairage 
 
   app.use(
     '/api',
-    createAuthMiddleware(() => network.token),
-    createApiRouter({ storage, events, network, persisterToken, appairage }),
+    createAuthMiddleware(() => network.token, (jeton) => sessions.portee(jeton)),
+    createApiRouter({ storage, events, network, persisterToken, appairage, sessions }),
   );
+  // La page de depot est servie sans jeton : c'est l'API qu'elle appelle qui
+  // verifie l'acces. Sans cette route, /depot ne resoudrait pas vers le fichier.
+  app.get('/depot', (req, res) => {
+    res.sendFile(path.join(DOSSIER_PUBLIC, 'depot.html'));
+  });
+
   app.use(express.static(DOSSIER_PUBLIC));
 
   app.use((err, req, res, next) => {

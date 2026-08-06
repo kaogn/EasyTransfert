@@ -24,6 +24,14 @@ const imageQr = document.querySelector('#qr');
 const champUrl = document.querySelector('#url');
 const selecteurIp = document.querySelector('#selecteur-ip');
 const boutonRegenerer = document.querySelector('#regenerer-jeton');
+const boutonCreerDepot = document.querySelector('#creer-depot');
+const blocSessionDepot = document.querySelector('#session-depot');
+const qrDepot = document.querySelector('#qr-depot');
+const urlDepot = document.querySelector('#url-depot');
+const infosDepot = document.querySelector('#infos-depot');
+const boutonRevoquerDepot = document.querySelector('#revoquer-depot');
+
+let jetonDepotCourant = null;
 
 const blocAppairage = document.querySelector('#bloc-appairage');
 const blocFichiers = document.querySelector('#bloc-fichiers');
@@ -117,6 +125,39 @@ boutonToutSupprimer.addEventListener('click', async () => {
   const { deleted } = await reponse.json();
   afficherEtat(deleted === 1 ? '1 fichier supprimé.' : `${deleted} fichiers supprimés.`);
   await rafraichirListe();
+});
+
+boutonCreerDepot.addEventListener('click', async () => {
+  boutonCreerDepot.disabled = true;
+  const reponse = await api('/api/depot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dureeMs: 30 * 60_000, quotaOctets: 2 * 1024 ** 3, quotaFichiers: 50 }),
+  });
+  boutonCreerDepot.disabled = false;
+
+  if (!reponse.ok) {
+    afficherEtat('Impossible de créer la session de dépôt.', true);
+    return;
+  }
+
+  const session = await reponse.json();
+  jetonDepotCourant = session.token;
+  qrDepot.src = session.qr;
+  urlDepot.textContent = session.url;
+  infosDepot.textContent =
+    `Valable ${Math.round(session.expireDansMs / 60000)} min · `
+    + `${session.fichiersRestants} fichiers max · ${tailleLisible(session.octetsRestants)} max`;
+  blocSessionDepot.hidden = false;
+  afficherEtat('Session de dépôt ouverte. Faites scanner ce QR code.');
+});
+
+boutonRevoquerDepot.addEventListener('click', async () => {
+  if (!jetonDepotCourant) return;
+  await api(`/api/depot/${jetonDepotCourant}`, { method: 'DELETE' });
+  jetonDepotCourant = null;
+  blocSessionDepot.hidden = true;
+  afficherEtat('Session de dépôt fermée.');
 });
 
 function envoyer(fichiers) {

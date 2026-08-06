@@ -47,8 +47,10 @@ Concrètement, sans enrobage :
   fichier envoyé traverse le réseau en clair.
 - **Le jeton d'accès est dans l'URL** — dans le QR code, et dans les liens de
   téléchargement. Quiconque peut observer le trafic réseau est en mesure de le lire.
-- **Qui détient ce jeton est maître du dossier partagé.** Il peut lister, télécharger,
-  déposer et *supprimer tous les fichiers*, depuis n'importe quel appareil du réseau.
+- **Qui détient le jeton principal est maître du dossier partagé.** Il peut lister,
+  télécharger, déposer et *supprimer tous les fichiers*, depuis n'importe quel appareil du
+  réseau. Les jetons de dépôt, eux, ne permettent que d'envoyer — c'est le seul accès à
+  confier à quelqu'un d'autre.
 - **Il n'y a ni compte, ni permissions, ni journal.** Le jeton est l'unique barrière.
 - **Le jeton survit aux redémarrages**, pour que le téléphone puisse garder la page en
   favori au lieu de rescanner à chaque fois. Un jeton qui fuite reste donc valable jusqu'à
@@ -92,6 +94,10 @@ bout en bout — [LocalSend](https://localsend.org) fait très bien le travail.
 - **Marche aussi d'un PC à l'autre** : un seul ordinateur lance le programme, l'autre ouvre
   l'adresse et saisit le code à six chiffres affiché en face. Pas de QR code à scanner
   quand on n'a pas de caméra, pas de jeton de 32 caractères à recopier.
+- **Sessions de dépôt** : un accès temporaire qui ne permet que d'envoyer. L'invité ne
+  voit pas la liste, ne télécharge rien, ne supprime rien — pratique pour faire déposer
+  des photos sans confier le dossier entier. Durée, taille et nombre de fichiers limités,
+  révocable d'un clic.
 - Les noms accentués survivent à l'aller-retour.
 - **Aucune requête sortante.** Pas de CDN, pas de police distante, pas de service tiers,
   pas de télémétrie. Rien ne sort du réseau local.
@@ -158,6 +164,7 @@ chemin sortant du dossier partagé.
 | `src/network.js` | détection des adresses IPv4 candidates du réseau local |
 | `src/demarrage.js` | choix du port et détection d'une instance déjà lancée |
 | `src/appairage.js` | code court et jetable pour connecter un nouvel appareil |
+| `src/sessions.js` | accès temporaires en dépôt seul : portée, quotas, expiration |
 | `src/security.js` | génération du jeton et middleware d'authentification |
 | `src/events.js` | diffusion des changements en SSE |
 | `src/routes.js` | routeur de l'API |
@@ -170,7 +177,7 @@ développement.
 npm test
 ```
 
-80 tests, avec le lanceur de tests intégré à Node.
+100 tests, avec le lanceur de tests intégré à Node.
 
 ## Limites assumées
 
@@ -180,7 +187,7 @@ Ce ne sont pas des fonctionnalités manquantes, mais des choix, et chacun a sa r
 |---|---|
 | **Pas de HTTPS** | Un certificat auto-signé afficherait un avertissement rouge sur le téléphone à chaque connexion — exactement l'écran qui fait renoncer un utilisateur non technique. Le projet vise le réseau domestique, où le compromis est acceptable ; il est documenté sans détour plus haut. |
 | **Pas de comptes ni de rôles** | Un seul foyer, deux ou trois appareils. Une base d'utilisateurs coûterait plus de code que tout le reste du projet, pour un besoin inexistant. |
-| **Un seul jeton, tous les droits** | Corollaire du point précédent. C'est la limite la plus réelle : quiconque obtient le jeton peut aussi supprimer. |
+| **Deux portées, pas davantage** | Le jeton principal peut tout ; les jetons de dépôt ne peuvent qu'envoyer. Un modèle de rôles plus fin n'aurait pas de sens pour trois appareils, mais le cas qui comptait vraiment — faire déposer un invité sans lui donner les clés — est couvert. |
 | **Pas de base de données** | Le dossier partagé *est* l'état. Rien à synchroniser, rien à migrer, et les fichiers restent lisibles sans le programme. |
 | **Windows uniquement** | Les lanceurs et la règle de pare-feu sont spécifiques. Le cœur en Node est portable, mais rien n'est testé ailleurs. |
 | **Trois dépendances** | `express`, `multer`, `qrcode`. Aucune dépendance de développement : les tests utilisent le lanceur intégré à Node. Moins de surface, moins de mises à jour de sécurité à suivre. |

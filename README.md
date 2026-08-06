@@ -46,8 +46,9 @@ Concretely, and without sugar-coating it:
   send crosses the network unencrypted.
 - **The access token is in the URL** — inside the QR code, and in the download links.
   Anyone able to observe network traffic can read it.
-- **Whoever holds that token owns the shared folder.** They can list, download, upload
-  and *delete every file in it*, from any device on the network.
+- **Whoever holds the main token owns the shared folder.** They can list, download, upload
+  and *delete every file in it*, from any device on the network. Drop-box tokens, by
+  contrast, can only upload — that is the access to hand to someone else.
 - **There are no accounts, no permissions, no audit trail.** The token is the one and only
   barrier.
 - **The token is persisted across restarts**, so that the phone can keep the page as a
@@ -89,6 +90,10 @@ encryption — [LocalSend](https://localsend.org) is a good one.
 - **Works PC to PC as well**: one computer runs the program, the other opens the address
   and types the six-digit code shown across the room. No QR code to scan when there is no
   camera, no 32-character token to copy by hand.
+- **Drop-box sessions**: a temporary access that can only upload. The guest sees no file
+  list, downloads nothing, deletes nothing — handy to let someone drop photos without
+  handing over the whole folder. Limited in duration, size and file count, revocable in
+  one click.
 - Accented file names survive the round trip.
 - **No outbound requests.** No CDN, no remote font, no third-party service, no telemetry.
   Nothing leaves your local network.
@@ -152,6 +157,7 @@ through a single guarded function that refuses any path escaping the shared fold
 | `src/network.js` | detection of candidate LAN IPv4 addresses |
 | `src/demarrage.js` | port selection and detection of an already-running instance |
 | `src/appairage.js` | short-lived code used to pair a new device |
+| `src/sessions.js` | upload-only temporary accesses: scope, quotas, expiry |
 | `src/security.js` | token generation and auth middleware |
 | `src/events.js` | server-sent events broadcasting |
 | `src/routes.js` | API router |
@@ -163,7 +169,7 @@ Three runtime dependencies (`express`, `multer`, `qrcode`), zero dev dependencie
 npm test
 ```
 
-80 tests, using the Node test runner.
+100 tests, using the Node test runner.
 
 ## Deliberate limitations
 
@@ -173,7 +179,7 @@ These are not missing features. They are choices, and each has a reason.
 |---|---|
 | **No HTTPS** | A self-signed certificate would raise a red warning on the phone at every visit — exactly the screen that makes a non-technical user give up. The project targets home networks, where the trade-off is acceptable, and it is documented bluntly above. |
 | **No accounts or roles** | One household, two or three devices. A user store would cost more code than the rest of the project, for a need that does not exist. |
-| **One token, full rights** | The consequence of the previous point. This is the most real limitation: whoever gets the token can also delete. |
+| **Two scopes, no more** | The main token can do everything; drop-box tokens can only upload. A finer role model would be pointless for three devices, but the case that actually mattered — letting a guest drop files without handing over the keys — is covered. |
 | **No database** | The shared folder *is* the state. Nothing to sync, nothing to migrate, and the files stay readable without the program. |
 | **Windows only** | The launchers and the firewall rule are platform-specific. The Node core is portable, but nothing is tested elsewhere. |
 | **Three dependencies** | `express`, `multer`, `qrcode`. Zero dev dependencies: tests use Node's built-in runner. Less surface, fewer security updates to track. |

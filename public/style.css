@@ -99,6 +99,22 @@ button {
 
 @media (min-width: 900px) { button { width: auto; } }
 
+.bloc-depot {
+  display: block;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--bordure);
+}
+
+#qr-depot {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 0.75rem auto 0.5rem;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .code-appairage {
   display: block;
   margin-top: 1rem;

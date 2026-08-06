@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EasyTransfert — Déposer des fichiers</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Déposer des fichiers</h1>
+      <p id="etat" class="etat">Prêt.</p>
+    </header>
+
+    <main>
+      <section class="carte">
+        <div id="zone-depot" class="zone-depot">
+          <p class="pc-seulement">Glissez vos fichiers ici</p>
+          <button id="bouton-parcourir" type="button">Choisir des fichiers</button>
+          <input id="champ-fichiers" type="file" multiple hidden />
+        </div>
+
+        <div id="progression" class="progression" hidden>
+          <div id="barre" class="barre"></div>
+          <span id="texte-progression"></span>
+        </div>
+
+        <ul id="envoyes" class="liste"></ul>
+
+        <p class="aide">
+          Cet accès sert uniquement à envoyer. Vous ne pouvez pas voir, télécharger ni
+          supprimer les fichiers déjà présents.
+        </p>
+        <p id="limites" class="aide"></p>
+      </section>
+    </main>
+
+    <script src="/depot.js" type="module"></script>
+  </body>
+</html>

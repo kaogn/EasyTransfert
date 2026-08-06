@@ -53,6 +53,25 @@
           </span>
         </div>
 
+        <div class="bloc-depot">
+          <span class="code-libelle">Faire déposer des fichiers par quelqu'un</span>
+          <button id="creer-depot" class="secondaire" type="button">
+            Créer une session de dépôt
+          </button>
+          <div id="session-depot" hidden>
+            <img id="qr-depot" alt="QR code de la session de dépôt" />
+            <p id="url-depot" class="url"></p>
+            <p id="infos-depot" class="aide"></p>
+            <button id="revoquer-depot" class="supprimer" type="button">
+              Fermer cette session
+            </button>
+          </div>
+          <p class="aide">
+            L'invité pourra seulement envoyer : ni liste, ni téléchargement, ni
+            suppression.
+          </p>
+        </div>
+
         <button id="regenerer-jeton" class="secondaire" type="button">
           Générer un nouveau jeton
         </button>

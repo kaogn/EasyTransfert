@@ -76,13 +76,46 @@ function egaliteConstante(a, b) {
  * `obtenirToken` est une fonction, et non une chaine : le token peut etre
  * regenere en cours d'execution, et le middleware doit alors refuser
  * immediatement l'ancien.
+ *
+ * `porteeInvite` permet de reconnaitre les jetons de depot, aux droits reduits.
+ * Le middleware ne repond plus seulement « qui es-tu ? » mais attache une
+ * portee a la requete ; c'est `exigerPortee` qui decide ensuite du droit.
  */
-export function createAuthMiddleware(obtenirToken) {
+export function createAuthMiddleware(obtenirToken, porteeInvite = () => null) {
   return function verifierToken(req, res, next) {
     const fourni = extractToken(req);
-    const attendu = obtenirToken();
-    if (!fourni || !attendu || !egaliteConstante(fourni, attendu)) {
+    if (!fourni) {
       res.status(401).json({ error: 'Token invalide ou absent' });
+      return;
+    }
+
+    const attendu = obtenirToken();
+    if (attendu && egaliteConstante(fourni, attendu)) {
+      req.portee = 'complet';
+      next();
+      return;
+    }
+
+    const portee = porteeInvite(fourni);
+    if (portee) {
+      req.portee = portee;
+      next();
+      return;
+    }
+
+    res.status(401).json({ error: 'Token invalide ou absent' });
+  };
+}
+
+/**
+ * Garde a poser sur toute route qui n'est pas ouverte aux invites. Liste
+ * blanche volontaire : une route oubliee est refusee aux invites plutot que
+ * de leur etre ouverte par megarde.
+ */
+export function exigerPortee(...poreesAutorisees) {
+  return function verifierPortee(req, res, next) {
+    if (!poreesAutorisees.includes(req.portee)) {
+      res.status(403).json({ error: 'Cette action n’est pas autorisée pour cet accès.' });
       return;
     }
     next();

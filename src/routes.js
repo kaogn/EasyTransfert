@@ -6,7 +6,7 @@ import express from 'express';
 import multer from 'multer';
 import QRCode from 'qrcode';
 
-import { createToken } from './security.js';
+import { createToken, exigerPortee, extractToken as extraireJeton } from './security.js';
 
 const TAILLE_MAX_OCTETS = 2 * 1024 * 1024 * 1024;
 const FICHIERS_MAX_PAR_ENVOI = 50;
@@ -30,7 +30,14 @@ function statutDepuisErreur(err) {
   return 500;
 }
 
-export function createApiRouter({ storage, events, network, persisterToken, appairage }) {
+export function createApiRouter({
+  storage,
+  events,
+  network,
+  persisterToken,
+  appairage,
+  sessions,
+}) {
   const router = express.Router();
 
   const upload = multer({
@@ -43,34 +50,74 @@ export function createApiRouter({ storage, events, network, persisterToken, appa
     limits: { fileSize: TAILLE_MAX_OCTETS, files: FICHIERS_MAX_PAR_ENVOI },
   });
 
-  router.get('/files', async (req, res) => {
+  /**
+   * Refuse un envoi d'invite avant qu'il ne touche le disque, quand la taille
+   * annoncee excede deja son quota. La verification finale se fait ensuite sur
+   * la taille reellement ecrite, la seule qui fasse foi.
+   */
+  function verifierQuotaAvantEcriture(req, res, next) {
+    if (req.portee !== 'depot') {
+      next();
+      return;
+    }
+    const annonce = Number(req.get('content-length') ?? 0);
+    const verdict = sessions.reserver(extraireJeton(req), annonce);
+    if (!verdict.ok) {
+      res.status(413).json({ error: verdict.raison });
+      return;
+    }
+    next();
+  }
+
+  router.get('/files', exigerPortee('complet'), async (req, res) => {
     res.json(await storage.list());
   });
 
-  router.get('/events', (req, res) => {
+  router.get('/events', exigerPortee('complet'), (req, res) => {
     events.subscribe(res);
   });
 
-  router.post('/upload', upload.array('files', FICHIERS_MAX_PAR_ENVOI), async (req, res) => {
-    const recus = req.files ?? [];
-    const enregistres = [];
-    try {
-      for (const fichier of recus) {
-        const nomFinal = await storage.uniqueName(corrigerEncodage(fichier.originalname));
-        await fs.rename(fichier.path, path.join(storage.rootDir, nomFinal));
-        enregistres.push(nomFinal);
-      }
-    } catch (err) {
-      // Ne rien laisser trainer : les .part encore presents sont supprimes.
-      await Promise.all(recus.map((f) => fs.rm(f.path, { force: true })));
-      res.status(500).json({ error: `Enregistrement impossible : ${err.message}` });
-      return;
-    }
-    events.broadcast('files-changed');
-    res.json({ saved: enregistres });
-  });
+  router.post(
+    '/upload',
+    exigerPortee('complet', 'depot'),
+    verifierQuotaAvantEcriture,
+    upload.array('files', FICHIERS_MAX_PAR_ENVOI),
+    async (req, res) => {
+      const recus = req.files ?? [];
 
-  router.get('/download/:id', async (req, res) => {
+      // Second controle, sur la taille reellement ecrite : l'en-tete annonce
+      // par le client ne l'engageait a rien.
+      if (req.portee === 'depot') {
+        const jeton = extraireJeton(req);
+        const total = recus.reduce((somme, f) => somme + f.size, 0);
+        const verdict = sessions.reserver(jeton, total);
+        if (!verdict.ok) {
+          await Promise.all(recus.map((f) => fs.rm(f.path, { force: true })));
+          res.status(413).json({ error: verdict.raison });
+          return;
+        }
+      }
+
+      const enregistres = [];
+      try {
+        for (const fichier of recus) {
+          const nomFinal = await storage.uniqueName(corrigerEncodage(fichier.originalname));
+          await fs.rename(fichier.path, path.join(storage.rootDir, nomFinal));
+          enregistres.push(nomFinal);
+          if (req.portee === 'depot') sessions.enregistrerFichier(extraireJeton(req), fichier.size);
+        }
+      } catch (err) {
+        // Ne rien laisser trainer : les .part encore presents sont supprimes.
+        await Promise.all(recus.map((f) => fs.rm(f.path, { force: true })));
+        res.status(500).json({ error: `Enregistrement impossible : ${err.message}` });
+        return;
+      }
+      events.broadcast('files-changed');
+      res.json({ saved: enregistres });
+    },
+  );
+
+  router.get('/download/:id', exigerPortee('complet'), async (req, res) => {
     let chemin;
     try {
       chemin = storage.resolve(req.params.id);
@@ -87,13 +134,13 @@ export function createApiRouter({ storage, events, network, persisterToken, appa
     res.download(chemin, path.basename(chemin));
   });
 
-  router.delete('/files', async (req, res) => {
+  router.delete('/files', exigerPortee('complet'), async (req, res) => {
     const deleted = await storage.removeAll();
     events.broadcast('files-changed');
     res.json({ deleted });
   });
 
-  router.delete('/files/:id', async (req, res) => {
+  router.delete('/files/:id', exigerPortee('complet'), async (req, res) => {
     try {
       await storage.remove(req.params.id);
       events.broadcast('files-changed');
@@ -119,11 +166,42 @@ export function createApiRouter({ storage, events, network, persisterToken, appa
     };
   }
 
-  router.get('/network', async (req, res) => {
+  router.get('/network', exigerPortee('complet'), async (req, res) => {
     res.json(await etatReseau());
   });
 
-  router.post('/network', async (req, res) => {
+  /**
+   * Ouvre un acces temporaire qui ne permet que de deposer. Ni liste, ni
+   * telechargement, ni suppression : de quoi faire envoyer des photos a
+   * quelqu'un sans lui confier le dossier entier.
+   */
+  router.post('/depot', exigerPortee('complet'), async (req, res) => {
+    const session = sessions.creer({
+      dureeMs: req.body?.dureeMs,
+      quotaOctets: req.body?.quotaOctets,
+      quotaFichiers: req.body?.quotaFichiers,
+    });
+    const url = `http://${network.active}:${network.port}/depot?t=${session.token}`;
+    res.json({
+      token: session.token,
+      url,
+      qr: await QRCode.toDataURL(url, { width: 320, margin: 1 }),
+      expireDansMs: session.expireA - Date.now(),
+      octetsRestants: session.octetsRestants,
+      fichiersRestants: session.fichiersRestants,
+    });
+  });
+
+  router.get('/depot', exigerPortee('complet'), (req, res) => {
+    res.json(sessions.lister());
+  });
+
+  router.delete('/depot/:token', exigerPortee('complet'), (req, res) => {
+    sessions.revoquer(req.params.token);
+    res.json({ ok: true });
+  });
+
+  router.post('/network', exigerPortee('complet'), async (req, res) => {
     const demandee = req.body?.address;
     if (!network.candidates.some((c) => c.address === demandee)) {
       res.status(400).json({ error: 'Adresse inconnue' });
@@ -135,7 +213,7 @@ export function createApiRouter({ storage, events, network, persisterToken, appa
 
   // Regenere le jeton d'acces : les appareils deja connectes sont ejectes et
   // devront rescanner le nouveau QR code.
-  router.post('/network/token', async (req, res) => {
+  router.post('/network/token', exigerPortee('complet'), async (req, res) => {
     network.token = createToken();
     if (persisterToken) await persisterToken(network.token);
     // Les routes HTTP revalident le jeton a chaque appel, mais un flux SSE
